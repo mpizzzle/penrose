@@ -1,12 +1,12 @@
 CXX = clang++
 CXXFLAGS = -O2 -Wall -Wextra -pedantic -std=c++17 -I.
-LIBS= -lSDL2
+LIBS = -lGL -lglfw -lGLEW
+DEPS = shader.hpp
 ODIR = obj
-_OBJ = penrose.o
-
+_OBJ = penrose.o shader.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
-$(ODIR)/%.o: %.cpp $(LIBS)
+$(ODIR)/%.o: %.cpp $(DEPS)
 	$(CXX) -c -o $@ $< $(CXXFLAGS)
 
 penrose: $(OBJ) $(LIBS)
