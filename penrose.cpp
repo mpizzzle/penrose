@@ -1,58 +1,73 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include <glm/glm.hpp>
+#include <glm/vec2.hpp>
+#include <glm/gtx/rotate_vector.hpp>
+
+#include <array>
 #include <iostream>
-#include <fstream>
-#include <sstream>
 #include <vector>
 
 #include "shader.hpp"
 
-//class triangle {
-//public:
-//    SDL_Point* points;
-//    std::vector<triangle*> subtriangles;
-//};
-//
-//class t123 : public triangle {
-//};
-//
-//class t124 : public triangle {
-//};
-//
-//void draw(SDL_Renderer* Renderer, std::vector<triangle> triangles) {
-//    SDL_SetRenderDrawColor(Renderer, 0x33, 0x66, 0x99, SDL_ALPHA_OPAQUE);
-//    SDL_RenderClear(Renderer);
-//
-//    SDL_SetRenderDrawColor(Renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
-//
-//    for (triangle t : triangles) {
-//        SDL_RenderDrawLines(Renderer, t.points, 4);
-//    }
-//
-//    SDL_RenderPresent(Renderer);
-//}
+static const uint32_t window_w = 1920;
+static const uint32_t window_h = 1080;
+
+class triangle {
+public:
+    bool clockwise; //do we need this?
+    std::array<glm::vec2*, 3> points;
+    std::vector<triangle*> subtriangles;
+};
+
+class t123 : public triangle {
+};
+
+class t124 : public triangle {
+};
 
 int main() {
-    // An array of 3 vectors which represents 3 vertices
-    static const GLfloat g_vertex_buffer_data[] = {
-       -.5f, -.5f, 0.0f,
-        .5f, -.5f, 0.0f,
-       0.0f,  .5f, 0.0f,
-    };
+    uint32_t poly = 11;
+    GLfloat poly_angle = glm::radians(360.0f / poly);
+    glm::vec2 origin = glm::vec2(0.0f, 0.0f);
+    glm::vec2 point = glm::vec2(0.0f, 1.0f);
 
-    //std::vector<triangle> triangles;
-    //t123 t;
-    //SDL_Point points[4] = { {0, 480}, {320, 0}, {640, 480}, {0, 480} };
-    //t.points = points;
-    //triangles.push_back(t);
+    std::vector<glm::vec2> points = { origin, point };
+    std::vector<uint32_t> indices = { 0, 1, 2 };
 
-    // Initialise GLFW
-    glewExperimental = true;
+    for (uint32_t i = 2; i < poly + 1; ++i) {
+        glm::vec2 next = glm::rotate(points[i - 1], poly_angle);
+        points.push_back(next);
+        std::array<uint32_t, 3> t = { 0, ((i - 1) % (poly + 1)) + 1, (i % poly) + 1 };
+        indices.insert(indices.end(), t.begin(), t.end());
+    }
+
+    for (auto& p : points) {
+        p = glm::rotate(p, poly_angle / 2.0f);
+        p.x = (p.x / window_w) * window_h;
+    }
+
+    std::vector<triangle> triangles;
+
+    //for (int i = 0; i < 10; ++i) {
+    //    t123 t;
+    //    t.clockwise = i % 2 == 0;
+    //    if (t.clockwise) {
+    //        t.points = { glm::rotateZ(point, glm::radians(36.0f)), point, glm::rotateZ(point, glm::radians(-36.0f)) };
+    //        point = glm::rotateZ(glm::rotateZ(point, glm::radians(36.0f)), glm::radians(36.0f));
+    //    }
+    //    else {
+    //        t.points = { glm::rotateZ(point, glm::radians(-36.0f)), point, glm::rotateZ(point, glm::radians(36.0f)) };
+    //    }
+    //    triangles.push_back(t);
+    //}
+
     if(!glfwInit())
     {
         return -1;
     }
+
     glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -60,7 +75,7 @@ int main() {
 
     // Open a window and create its OpenGL context
     GLFWwindow* window; // (In the accompanying source code, this variable is global for simplicity)
-    window = glfwCreateWindow(1920, 1080, "penrose", NULL, NULL);
+    window = glfwCreateWindow(window_w, window_h, "penrose", NULL, NULL);
 
     if(window == NULL) {
         glfwTerminate();
@@ -74,45 +89,46 @@ int main() {
         return -1;
     }
 
-    GLuint VertexArrayID;
-    glGenVertexArrays(1, &VertexArrayID);
-    glBindVertexArray(VertexArrayID);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    GLuint vertexArrayID;
+    glGenVertexArrays(1, &vertexArrayID);
+    glBindVertexArray(vertexArrayID);
 
     glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
-    // This will identify our vertex buffer
     GLuint vertexbuffer;
-    // Generate 1 buffer, put the resulting identifier in vertexbuffer
     glGenBuffers(1, &vertexbuffer);
-    // The following commands will talk about our 'vertexbuffer' buffer
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-    // Give our vertices to OpenGL.
-    glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, points.size() * 4 * 2, &points[0], GL_STATIC_DRAW);
+
+    uint32_t EBO;
+    glGenBuffers(1, &EBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * 4, &indices[0], GL_STATIC_DRAW);
 
     GLuint programID = Shader::loadShaders("vertex.vert", "fragment.frag");
-    glUseProgram(programID);
 
-    do{
+    while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0) {
+        glClearColor(0.2f, 0.2f, 0.4f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // 1st attribute buffer : vertices
+        glUseProgram(programID);
+
         glEnableVertexAttribArray(0);
+
+        glBindVertexArray(vertexArrayID);
         glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-        glVertexAttribPointer(
-           0,        // attribute 0. No particular reason for 0, but must match the layout in the shader.
-           3,        // size
-           GL_FLOAT, // type
-           GL_FALSE, // normalized?
-           0,        // stride
-           (void*)0  // array buffer offset
-        );
-        // Draw the triangle !
-        glDrawArrays(GL_TRIANGLES, 0, 3); // Starting from vertex 0; 3 vertices total -> 1 triangle
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (void*)0);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+
         glDisableVertexAttribArray(0);
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-    while(glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0);
 
     return 0;
 }
