@@ -2,5 +2,5 @@
 
 out vec3 color;
 void main() {
-  color = vec3(.5, .5, 0.0);
+  color = vec3(.7, .7, 0.0);
 }

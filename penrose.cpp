@@ -26,6 +26,10 @@ class t123 : public triangle {
 class t124 : public triangle {
 };
 
+t123* gen_t123(std::array<glm::vec2*, 3> points) {
+    return nullptr;
+}
+
 int main() {
     uint32_t poly = 10;
     GLfloat poly_angle = glm::radians(360.0f / poly);
@@ -51,24 +55,30 @@ int main() {
 
     std::vector<triangle> triangles;
 
-    for (unsigned int j = 0, k = 0; j < poly; j++, k += 2) {
-        //for (unsigned int i = 0; i < 5; ++i) {
-            t123 t;
-            t.points = { &points[indices[3 * j]], &points[indices[(3 * j) + 1]], &points[indices[(3 * j) + 2]] };
+    for (unsigned int j = 0, k = 0; j < poly; j++, k += 3) {
+        t123 t;
+        t.points = { &points[indices[3 * j]], &points[indices[(3 * j) + 1]], &points[indices[(3 * j) + 2]] };
 
-            glm::vec2 p1(t.points[2]->x * phi, t.points[2]->y * phi);
-            glm::vec2 p2(t.points[1]->x * (1.0f - phi), t.points[1]->y * (1.0f - phi));
-            points.push_back(p1);
-            points.push_back(p2);
+        glm::vec2 p1(t.points[2]->x * phi, t.points[2]->y * phi);
+        glm::vec2 p2(t.points[1]->x * (1.0f - phi), t.points[1]->y * (1.0f - phi));
+        points.push_back(p1);
+        points.push_back(p2);
 
-            std::array<uint32_t, 3> t1 = { indices[(3 * j) + 1], poly + k + 1, poly + k + 2 };
-            indices.insert(indices.end(), t1.begin(), t1.end());
+        std::array<uint32_t, 3> t1 = { indices[(3 * j) + 1], poly + k + 1, poly + k + 2 };
+        indices.insert(indices.end(), t1.begin(), t1.end());
 
-            t123 st1, st2;
-            t124 st3;
+        triangles.push_back(t);
 
-            triangles.push_back(t);
-        //}
+        //t123 st1, st2;
+        t124 st3;
+
+        st3.points = { &points[indices[3 * j]], &points[poly + k + 1], &points[poly + k + 2] };
+
+        glm::vec2 p3(st3.points[1]->x * (1.0f - phi), st3.points[1]->y * (1.0f - phi));
+        points.push_back(p3);
+
+        std::array<uint32_t, 3> t3 = { indices[(3 * j)], poly + k + 2, poly + k + 3 };
+        indices.insert(indices.end(), t3.begin(), t3.end());
     }
 
     if(!glfwInit())
