@@ -16,7 +16,6 @@ static const uint32_t window_h = 1080;
 
 class triangle {
 public:
-    bool clockwise; //do we need this?
     std::array<glm::vec2*, 3> points;
     std::vector<triangle*> subtriangles;
 };
@@ -28,10 +27,11 @@ class t124 : public triangle {
 };
 
 int main() {
-    uint32_t poly = 11;
+    uint32_t poly = 10;
     GLfloat poly_angle = glm::radians(360.0f / poly);
     glm::vec2 origin = glm::vec2(0.0f, 0.0f);
     glm::vec2 point = glm::vec2(0.0f, 1.0f);
+    GLfloat phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
 
     std::vector<glm::vec2> points = { origin, point };
     std::vector<uint32_t> indices = { 0, 1, 2 };
@@ -40,6 +40,7 @@ int main() {
         glm::vec2 next = glm::rotate(points[i - 1], poly_angle);
         points.push_back(next);
         std::array<uint32_t, 3> t = { 0, ((i - 1) % (poly + 1)) + 1, (i % poly) + 1 };
+        if (i % 2 == 0) std::swap(t[1], t[2]);
         indices.insert(indices.end(), t.begin(), t.end());
     }
 
@@ -50,31 +51,37 @@ int main() {
 
     std::vector<triangle> triangles;
 
-    //for (int i = 0; i < 10; ++i) {
-    //    t123 t;
-    //    t.clockwise = i % 2 == 0;
-    //    if (t.clockwise) {
-    //        t.points = { glm::rotateZ(point, glm::radians(36.0f)), point, glm::rotateZ(point, glm::radians(-36.0f)) };
-    //        point = glm::rotateZ(glm::rotateZ(point, glm::radians(36.0f)), glm::radians(36.0f));
-    //    }
-    //    else {
-    //        t.points = { glm::rotateZ(point, glm::radians(-36.0f)), point, glm::rotateZ(point, glm::radians(36.0f)) };
-    //    }
-    //    triangles.push_back(t);
-    //}
+    for (unsigned int j = 0, k = 0; j < poly; j++, k += 2) {
+        //for (unsigned int i = 0; i < 5; ++i) {
+            t123 t;
+            t.points = { &points[indices[3 * j]], &points[indices[(3 * j) + 1]], &points[indices[(3 * j) + 2]] };
+
+            glm::vec2 p1(t.points[2]->x * phi, t.points[2]->y * phi);
+            glm::vec2 p2(t.points[1]->x * (1.0f - phi), t.points[1]->y * (1.0f - phi));
+            points.push_back(p1);
+            points.push_back(p2);
+
+            std::array<uint32_t, 3> t1 = { indices[(3 * j) + 1], poly + k + 1, poly + k + 2 };
+            indices.insert(indices.end(), t1.begin(), t1.end());
+
+            t123 st1, st2;
+            t124 st3;
+
+            triangles.push_back(t);
+        //}
+    }
 
     if(!glfwInit())
     {
         return -1;
     }
 
-    glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
+    glfwWindowHint(GLFW_SAMPLES, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // We don't want the old OpenGL 
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    // Open a window and create its OpenGL context
-    GLFWwindow* window; // (In the accompanying source code, this variable is global for simplicity)
+    GLFWwindow* window;
     window = glfwCreateWindow(window_w, window_h, "penrose", NULL, NULL);
 
     if(window == NULL) {
@@ -82,7 +89,7 @@ int main() {
         return -1;
     }
 
-    glfwMakeContextCurrent(window); // Initialize GLEW
+    glfwMakeContextCurrent(window);
     glewExperimental=true;
 
     if (glewInit() != GLEW_OK) {
