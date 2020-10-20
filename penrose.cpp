@@ -13,47 +13,99 @@
 
 static const uint32_t window_w = 1920;
 static const uint32_t window_h = 1080;
+static const uint32_t depth = 5;
 
 static const GLfloat phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
 
 class triangle {
 public:
-    std::array<glm::vec2*, 3> points;
+    bool t_123;
+    std::array<uint32_t, 3> indices;
+    std::array<glm::vec2, 3> points;
     std::vector<triangle*> subtriangles;
 };
 
-class t123 : public triangle {
-};
+void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_t>& indices, uint32_t depth) {
+    //uint32_t s = points.size();
+    std::array<glm::vec2, 3>& p = parent.points;
+    std::array<uint32_t, 3>& i = parent.indices;
+    std::vector<uint32_t> t;
 
-class t124 : public triangle {
-};
+    if (depth > 0) {
+        if (parent.t_123) {
+            //distance d = √((x1 − x0)2 + (y1 − y0)2)
+            //ratio t = dt / d, in this case dt = phi * d so t = phi (no need to calc d)
+            //therefore, (xt, yt) = (((1 − phi) x0 + phi * x1),((1 − phi) y0 + phi * y1))
 
-void split_t123(std::array<glm::vec2*, 3>& parent, std::vector<glm::vec2>& points, std::vector<uint32_t>& indices, uint32_t j) {
-    uint32_t s = points.size();
+            glm::vec2 p1(((1.0f - phi) * p[0].x) + (phi * p[2].x), ((1.0f - phi) * p[0].y) + (phi * p[2].y));
+            glm::vec2 p2(((1.0f - phi) * p[1].x) + (phi * p[0].x), ((1.0f - phi) * p[1].y) + (phi * p[0].y));
 
-    glm::vec2 p1((parent[2]->x * phi) - (parent[0]->x * phi), (parent[2]->y * phi) - (parent[0]->x * phi));
-    glm::vec2 p2((parent[1]->x * (1.0f - phi)) - (parent[0]->x * (1.0f - phi)), (parent[1]->y * (1.0f - phi)) - (parent[0]->y * (1.0f - phi)));
+            points.push_back(p1);
+            points.push_back(p2);
 
-    points.push_back(p1);
-    points.push_back(p2);
+            uint32_t s = points.size();
 
-    std::array<uint32_t, 3> t1 = { indices[(3 * j) + 1], s, s + 1 };
-    indices.insert(indices.end(), t1.begin(), t1.end());
+            //t = { i[1], i[2], s,    //t123 1
+            //      i[1], s, s + 1,   //t123 2
+            //      i[0], s, s + 1 }; //t124
 
-    //triangles.push_back(t);
-    return ;
-}
+            t = { i[1], i[2], s - 2,    //t123 1
+                  i[1], s - 1, s - 2,   //t123 2
+                  i[0], s - 2, s - 1 }; //t124
 
-void split_t124(std::array<glm::vec2*, 3>& parent, std::vector<glm::vec2>& points, std::vector<uint32_t>& indices, uint32_t j) {
-    uint32_t s = points.size();
+            triangle t123_1;
+            t123_1.t_123 = true;
+            t123_1.points = { parent.points[1], parent.points[2], points[s - 2] };
+            t123_1.indices = { i[1], i[2], s - 2 };
 
-    glm::vec2 p1((parent[1]->x * (1.0f - phi)) - (parent[0]->x * (1.0f - phi)), (parent[1]->y * (1.0f - phi)) - (parent[0]->y * (1.0f - phi)));
+            triangle t123_2;
+            t123_2.t_123 = true;
+            t123_2.points = { parent.points[1], points[s - 1], points[s - 2] };
+            t123_2.indices = { i[1], s - 1, s - 2 };
 
-    points.push_back(p1);
+            triangle t124;
+            t124.t_123 = false;
+            t124.points = { parent.points[0], points[s - 2], points[s - 1] };
+            t124.indices = { i[0], s - 2, s - 1 };
 
-    std::array<uint32_t, 3> t3 = { indices[(3 * j)], s, s + 1 };
-    indices.insert(indices.end(), t3.begin(), t3.end());
-    return ;
+            parent.subtriangles = { &t123_1, &t123_2, &t124 };
+        }
+        //else {
+        //    glm::vec2 p3(((1.0f - phi) * p[1].x) + (phi * p[0].x), ((1.0f - phi) * p[1].y) + (phi * p[0].y));
+
+        //    uint32_t s = points.size();
+        //    points.push_back(p3);
+
+        //    t = { i[0], s, s + 1,   //t123
+        //          i[1], s, s + 1 }; // t124
+
+        //    triangle t123;
+        //    t123.t_123 = true;
+        //    t123.points = { parent.points[0], points[s], points[s + 1] };
+        //    t123.indices = { 0, s, s + 1 };
+
+        //    triangle t124;
+        //    t124.t_123 = false;
+        //    t124.points = { parent.points[1], points[s], points[s + 1] };
+        //    t124.indices = { 1, s, s + 1 };
+
+        //    parent.subtriangles = { &t123, &t124 };
+        //}
+
+        indices.insert(indices.end(), t.begin(), t.end());
+
+        std::cout << "all:" << std::endl;
+        for (auto& blep : points) {
+                std::cout << "(" << blep.x << ", " << blep.y << ")" << std::endl;
+        }
+        std::cout << std::endl;
+
+        for (auto&tri : parent.subtriangles) {
+            split(*tri, points, indices, depth - 1);
+        }
+    }
+
+    return;
 }
 
 int main() {
@@ -61,7 +113,6 @@ int main() {
     GLfloat poly_angle = glm::radians(360.0f / poly);
     glm::vec2 origin = glm::vec2(0.0f, 0.0f);
     glm::vec2 point = glm::vec2(0.0f, 1.0f);
-    //GLfloat phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
 
     std::vector<glm::vec2> points = { origin, point };
     std::vector<uint32_t> indices = { 0, 1, 2 };
@@ -75,20 +126,18 @@ int main() {
     }
 
     for (auto& p : points) {
-        p = glm::rotate(p, poly_angle / 2.0f);
+        //p = glm::rotate(p, poly_angle / 2.0f);
         p.x = (p.x / window_w) * window_h;
     }
 
     std::vector<triangle> triangles;
 
     for (uint32_t j = 0; j < poly; j++) {
-        t123 t;
-        t.points = { &points[indices[3 * j]], &points[indices[(3 * j) + 1]], &points[indices[(3 * j) + 2]] };
-        split_t123(t.points, points, indices, j);
-
-        t124 st3;
-        st3.points = { &points[indices[3 * j]], &points[points.size()], &points[points.size() + 1] };
-        split_t124(st3.points, points, indices, j);
+        triangle t;
+        t.t_123 = true;
+        t.points = { points[indices[3 * j]], points[indices[(3 * j) + 1]], points[indices[(3 * j) + 2]] };
+        t.indices = { indices[3 * j], indices[(3 * j) + 1], indices[(3 * j) + 2] };
+        split(t, points, indices, depth);
     }
 
     if(!glfwInit())
