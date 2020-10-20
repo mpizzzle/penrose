@@ -14,6 +14,8 @@
 static const uint32_t window_w = 1920;
 static const uint32_t window_h = 1080;
 
+static const GLfloat phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
+
 class triangle {
 public:
     std::array<glm::vec2*, 3> points;
@@ -26,8 +28,32 @@ class t123 : public triangle {
 class t124 : public triangle {
 };
 
-t123* gen_t123(std::array<glm::vec2*, 3> points) {
-    return nullptr;
+void split_t123(std::array<glm::vec2*, 3>& parent, std::vector<glm::vec2>& points, std::vector<uint32_t>& indices, uint32_t j) {
+    uint32_t s = points.size();
+
+    glm::vec2 p1((parent[2]->x * phi) - (parent[0]->x * phi), (parent[2]->y * phi) - (parent[0]->x * phi));
+    glm::vec2 p2((parent[1]->x * (1.0f - phi)) - (parent[0]->x * (1.0f - phi)), (parent[1]->y * (1.0f - phi)) - (parent[0]->y * (1.0f - phi)));
+
+    points.push_back(p1);
+    points.push_back(p2);
+
+    std::array<uint32_t, 3> t1 = { indices[(3 * j) + 1], s, s + 1 };
+    indices.insert(indices.end(), t1.begin(), t1.end());
+
+    //triangles.push_back(t);
+    return ;
+}
+
+void split_t124(std::array<glm::vec2*, 3>& parent, std::vector<glm::vec2>& points, std::vector<uint32_t>& indices, uint32_t j) {
+    uint32_t s = points.size();
+
+    glm::vec2 p1((parent[1]->x * (1.0f - phi)) - (parent[0]->x * (1.0f - phi)), (parent[1]->y * (1.0f - phi)) - (parent[0]->y * (1.0f - phi)));
+
+    points.push_back(p1);
+
+    std::array<uint32_t, 3> t3 = { indices[(3 * j)], s, s + 1 };
+    indices.insert(indices.end(), t3.begin(), t3.end());
+    return ;
 }
 
 int main() {
@@ -35,7 +61,7 @@ int main() {
     GLfloat poly_angle = glm::radians(360.0f / poly);
     glm::vec2 origin = glm::vec2(0.0f, 0.0f);
     glm::vec2 point = glm::vec2(0.0f, 1.0f);
-    GLfloat phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
+    //GLfloat phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
 
     std::vector<glm::vec2> points = { origin, point };
     std::vector<uint32_t> indices = { 0, 1, 2 };
@@ -55,30 +81,14 @@ int main() {
 
     std::vector<triangle> triangles;
 
-    for (unsigned int j = 0, k = 0; j < poly; j++, k += 3) {
+    for (uint32_t j = 0; j < poly; j++) {
         t123 t;
         t.points = { &points[indices[3 * j]], &points[indices[(3 * j) + 1]], &points[indices[(3 * j) + 2]] };
+        split_t123(t.points, points, indices, j);
 
-        glm::vec2 p1(t.points[2]->x * phi, t.points[2]->y * phi);
-        glm::vec2 p2(t.points[1]->x * (1.0f - phi), t.points[1]->y * (1.0f - phi));
-        points.push_back(p1);
-        points.push_back(p2);
-
-        std::array<uint32_t, 3> t1 = { indices[(3 * j) + 1], poly + k + 1, poly + k + 2 };
-        indices.insert(indices.end(), t1.begin(), t1.end());
-
-        triangles.push_back(t);
-
-        //t123 st1, st2;
         t124 st3;
-
-        st3.points = { &points[indices[3 * j]], &points[poly + k + 1], &points[poly + k + 2] };
-
-        glm::vec2 p3(st3.points[1]->x * (1.0f - phi), st3.points[1]->y * (1.0f - phi));
-        points.push_back(p3);
-
-        std::array<uint32_t, 3> t3 = { indices[(3 * j)], poly + k + 2, poly + k + 3 };
-        indices.insert(indices.end(), t3.begin(), t3.end());
+        st3.points = { &points[indices[3 * j]], &points[points.size()], &points[points.size() + 1] };
+        split_t124(st3.points, points, indices, j);
     }
 
     if(!glfwInit())
