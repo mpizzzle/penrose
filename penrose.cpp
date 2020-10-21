@@ -15,7 +15,6 @@ static const uint32_t window_w = 1920;
 static const uint32_t window_h = 1080;
 static const uint32_t depth = 6;
 static const glm::vec3 primary(0.7f, 0.7f, 0.0f);
-static const glm::vec3 secondary(0.3f, 0.3f, 0.7f);
 
 static const GLfloat phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
 
@@ -28,7 +27,7 @@ public:
 };
 
 void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_t>& indices, uint32_t depth) {
-    //uint32_t s = points.size();
+    uint32_t s = points.size();
     std::array<glm::vec2, 3>& p = parent.points;
     std::array<uint32_t, 3>& i = parent.indices;
     std::vector<uint32_t> t;
@@ -45,33 +44,30 @@ void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_
             points.push_back(p1);
             points.push_back(p2);
 
-            uint32_t s = points.size();
-
-            t = { i[1], i[2], s - 2,    //t123 1
-                  i[1], s - 1, s - 2,   //t123 2
-                  s - 2, s - 1, i[0] }; //t124
+            t = { i[1], i[2], s,    //t123 1
+                  i[1], s + 1, s,   //t123 2
+                  s, s + 1, i[0] }; //t124
 
             triangle t123_1;
             t123_1.t_123 = true;
             t123_1.points = { parent.points[1], parent.points[2], p1 };
-            t123_1.indices = { i[1], i[2], s - 2 };
+            t123_1.indices = { i[1], i[2], s };
 
             triangle t123_2;
             t123_2.t_123 = true;
             t123_2.points = { parent.points[1], p2, p1 };
-            t123_2.indices = { i[1], s - 1, s - 2 };
+            t123_2.indices = { i[1], s + 1, s };
 
             triangle t124;
             t124.t_123 = false;
             t124.points = { p1, p2, parent.points[0] };
-            t124.indices = { s - 2, s - 1, i[0] };
+            t124.indices = { s, s + 1, i[0] };
 
             parent.subtriangles = { &t123_1, &t123_2, &t124 };
         }
         else {
             glm::vec2 p3(((1.0f - phi) * p[2].x) + (phi * p[0].x), ((1.0f - phi) * p[2].y) + (phi * p[0].y));
 
-            uint32_t s = points.size();
             points.push_back(p3);
 
             t = { i[2], s, i[1],   //t123
