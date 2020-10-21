@@ -18,8 +18,7 @@ static const glm::vec3 primary(0.7f, 0.7f, 0.0f);
 
 static const GLfloat phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
 
-class triangle {
-public:
+struct triangle {
     bool t_123;
     std::array<uint32_t, 3> indices;
     std::array<glm::vec2, 3> points;
