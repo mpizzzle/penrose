@@ -47,7 +47,7 @@ void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_
 
             t = { i[1], i[2], s - 2,    //t123 1
                   i[1], s - 1, s - 2,   //t123 2
-                  i[0], s - 1, s - 2 }; //t124
+                  s - 2, s - 1, i[0] }; //t124
 
             triangle t123_1;
             t123_1.t_123 = true;
@@ -61,12 +61,11 @@ void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_
 
             triangle t124;
             t124.t_123 = false;
-            t124.points = { parent.points[0], p2, p1 };
-            t124.indices = { i[0], s - 1, s - 2 };
+            t124.points = { p1, p2, parent.points[0] };
+            t124.indices = { s - 2, s - 1, i[0] };
 
             parent.subtriangles = { &t123_1, &t123_2, &t124 };
         }
-        //if (false) {
         else {
             glm::vec2 p3(((1.0f - phi) * p[2].x) + (phi * p[0].x), ((1.0f - phi) * p[2].y) + (phi * p[0].y));
 
