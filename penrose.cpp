@@ -13,7 +13,9 @@
 
 static const uint32_t window_w = 1920;
 static const uint32_t window_h = 1080;
-static const uint32_t depth = 5;
+static const uint32_t depth = 6;
+static const glm::vec3 primary(0.7f, 0.7f, 0.0f);
+static const glm::vec3 secondary(0.3f, 0.3f, 0.7f);
 
 static const GLfloat phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
 
@@ -72,10 +74,6 @@ void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_
             uint32_t s = points.size();
             points.push_back(p3);
 
-            std::cout << "(" << p[0].x << ", " << p[0].y << ")" << std::endl;
-            std::cout << "(" << p[1].x << ", " << p[1].y << ")" << std::endl;
-            std::cout << "(" << p[2].x << ", " << p[2].y << ")" << std::endl;
-
             t = { i[2], s, i[1],   //t123
                   i[1], s, i[0] }; //t124
 
@@ -103,14 +101,11 @@ void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_
 }
 
 int main() {
-    //uint32_t poly = 1;
     uint32_t poly = 10;
     GLfloat poly_angle = glm::radians(360.0f / poly);
     glm::vec2 origin = glm::vec2(0.0f, 0.0f);
     glm::vec2 point = glm::vec2(0.0f, 1.0f);
-    //glm::vec2 point1 = glm::rotate(point, glm::radians(36.0f));
 
-    //std::vector<glm::vec2> points = { origin, point, point1 };
     std::vector<glm::vec2> points = { origin, point };
     std::vector<uint32_t> indices = { 0, 1, 2 };
 
@@ -162,9 +157,6 @@ int main() {
         return -1;
     }
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
     GLuint vertexArrayID;
     glGenVertexArrays(1, &vertexArrayID);
     glBindVertexArray(vertexArrayID);
@@ -182,12 +174,15 @@ int main() {
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * 4, &indices[0], GL_STATIC_DRAW);
 
     GLuint programID = Shader::loadShaders("vertex.vert", "fragment.frag");
+    GLint paint = glGetUniformLocation(programID, "paint");
 
-    while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0) {
+    while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0 && paint != -1) {
         glClearColor(0.2f, 0.2f, 0.4f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(programID);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glUniform3fv(paint, 1, &primary[0]);
 
         glEnableVertexAttribArray(0);
 
