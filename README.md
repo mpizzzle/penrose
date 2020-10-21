@@ -3,7 +3,7 @@
 
 work in progress.
 
-![alt text](https://raw.githubusercontent.com/mpizzzle/OldJavaGames/master/scrot.png)
+![alt text](https://raw.githubusercontent.com/mpizzzle/penrose/master/scrot.png)
 
 ##dependencies:
 * glfw
