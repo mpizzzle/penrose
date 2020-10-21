@@ -51,24 +51,24 @@ void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_
 
             triangle t123_1;
             t123_1.t_123 = true;
-            t123_1.points = { parent.points[1], parent.points[2], points[s - 2] };
+            t123_1.points = { parent.points[1], parent.points[2], p1 };
             t123_1.indices = { i[1], i[2], s - 2 };
 
             triangle t123_2;
             t123_2.t_123 = true;
-            t123_2.points = { parent.points[1], points[s - 1], points[s - 2] };
+            t123_2.points = { parent.points[1], p2, p1 };
             t123_2.indices = { i[1], s - 1, s - 2 };
 
             triangle t124;
             t124.t_123 = false;
-            t124.points = { parent.points[0], points[s - 1], points[s - 2] };
+            t124.points = { parent.points[0], p2, p1 };
             t124.indices = { i[0], s - 1, s - 2 };
 
             parent.subtriangles = { &t123_1, &t123_2, &t124 };
         }
-        if (false) {
-        //else {
-            glm::vec2 p3(((1.0f - phi) * p[1].x) + (phi * p[0].x), ((1.0f - phi) * p[1].y) + (phi * p[0].y));
+        //if (false) {
+        else {
+            glm::vec2 p3(((1.0f - phi) * p[2].x) + (phi * p[0].x), ((1.0f - phi) * p[2].y) + (phi * p[0].y));
 
             uint32_t s = points.size();
             points.push_back(p3);
@@ -77,7 +77,7 @@ void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_
             std::cout << "(" << p[1].x << ", " << p[1].y << ")" << std::endl;
             std::cout << "(" << p[2].x << ", " << p[2].y << ")" << std::endl;
 
-            t = {// i[1], s, i[2],   //t123
+            t = { //i[1], s, i[2],   //t123
                   i[1], s, i[0] }; //t124
 
             //triangle t123;
@@ -87,17 +87,16 @@ void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_
 
             triangle t124;
             t124.t_123 = false;
-            t124.points = { parent.points[1], points[s], parent.points[0] };
-            t124.indices = { 1, s, 0 };
+            t124.points = { parent.points[1], p3, parent.points[0] };
+            t124.indices = { i[1], s, i[0] };
 
-            std::cout << "all:" << std::endl;
-            for (auto& blep : points) {
-                std::cout << "(" << blep.x << ", " << blep.y << ")" << std::endl;
-            }
-            std::cout << std::endl;
+            //std::cout << "all:" << std::endl;
+            //for (auto& blep : points) {
+            //    std::cout << "(" << blep.x << ", " << blep.y << ")" << std::endl;
+            //}
+            //std::cout << std::endl;
 
-            parent.subtriangles = { &t124 };
-            //parent.subtriangles = { &t123, &t124 };
+            parent.subtriangles = { /*&t123,*/ &t124 };
         }
 
         indices.insert(indices.end(), t.begin(), t.end());
