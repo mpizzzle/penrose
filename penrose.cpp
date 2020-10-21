@@ -13,7 +13,7 @@
 
 static const uint32_t window_w = 1920;
 static const uint32_t window_h = 1080;
-static const uint32_t depth = 5;
+static const uint32_t depth = 8;
 
 static const GLfloat phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
 
@@ -45,13 +45,9 @@ void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_
 
             uint32_t s = points.size();
 
-            //t = { i[1], i[2], s,    //t123 1
-            //      i[1], s, s + 1,   //t123 2
-            //      i[0], s, s + 1 }; //t124
-
             t = { i[1], i[2], s - 2,    //t123 1
                   i[1], s - 1, s - 2,   //t123 2
-                  i[0], s - 2, s - 1 }; //t124
+                  i[0], s - 1, s - 2 }; //t124
 
             triangle t123_1;
             t123_1.t_123 = true;
@@ -65,42 +61,48 @@ void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_
 
             triangle t124;
             t124.t_123 = false;
-            t124.points = { parent.points[0], points[s - 2], points[s - 1] };
-            t124.indices = { i[0], s - 2, s - 1 };
+            t124.points = { parent.points[0], points[s - 1], points[s - 2] };
+            t124.indices = { i[0], s - 1, s - 2 };
 
             parent.subtriangles = { &t123_1, &t123_2, &t124 };
         }
+        if (false) {
         //else {
-        //    glm::vec2 p3(((1.0f - phi) * p[1].x) + (phi * p[0].x), ((1.0f - phi) * p[1].y) + (phi * p[0].y));
+            glm::vec2 p3(((1.0f - phi) * p[1].x) + (phi * p[0].x), ((1.0f - phi) * p[1].y) + (phi * p[0].y));
 
-        //    uint32_t s = points.size();
-        //    points.push_back(p3);
+            uint32_t s = points.size();
+            points.push_back(p3);
 
-        //    t = { i[0], s, s + 1,   //t123
-        //          i[1], s, s + 1 }; // t124
+            std::cout << "(" << p[0].x << ", " << p[0].y << ")" << std::endl;
+            std::cout << "(" << p[1].x << ", " << p[1].y << ")" << std::endl;
+            std::cout << "(" << p[2].x << ", " << p[2].y << ")" << std::endl;
 
-        //    triangle t123;
-        //    t123.t_123 = true;
-        //    t123.points = { parent.points[0], points[s], points[s + 1] };
-        //    t123.indices = { 0, s, s + 1 };
+            t = {// i[1], s, i[2],   //t123
+                  i[1], s, i[0] }; //t124
 
-        //    triangle t124;
-        //    t124.t_123 = false;
-        //    t124.points = { parent.points[1], points[s], points[s + 1] };
-        //    t124.indices = { 1, s, s + 1 };
+            //triangle t123;
+            //t123.t_123 = true;
+            //t123.points = { parent.points[1], points[s], parent.points[2] };
+            //t123.indices = { 1, s, 2 };
 
-        //    parent.subtriangles = { &t123, &t124 };
-        //}
+            triangle t124;
+            t124.t_123 = false;
+            t124.points = { parent.points[1], points[s], parent.points[0] };
+            t124.indices = { 1, s, 0 };
+
+            std::cout << "all:" << std::endl;
+            for (auto& blep : points) {
+                std::cout << "(" << blep.x << ", " << blep.y << ")" << std::endl;
+            }
+            std::cout << std::endl;
+
+            parent.subtriangles = { &t124 };
+            //parent.subtriangles = { &t123, &t124 };
+        }
 
         indices.insert(indices.end(), t.begin(), t.end());
 
-        std::cout << "all:" << std::endl;
-        for (auto& blep : points) {
-                std::cout << "(" << blep.x << ", " << blep.y << ")" << std::endl;
-        }
-        std::cout << std::endl;
-
-        for (auto&tri : parent.subtriangles) {
+        for (auto& tri : parent.subtriangles) {
             split(*tri, points, indices, depth - 1);
         }
     }
@@ -109,11 +111,14 @@ void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_
 }
 
 int main() {
+    //uint32_t poly = 1;
     uint32_t poly = 10;
     GLfloat poly_angle = glm::radians(360.0f / poly);
     glm::vec2 origin = glm::vec2(0.0f, 0.0f);
     glm::vec2 point = glm::vec2(0.0f, 1.0f);
+    //glm::vec2 point1 = glm::rotate(point, glm::radians(36.0f));
 
+    //std::vector<glm::vec2> points = { origin, point, point1 };
     std::vector<glm::vec2> points = { origin, point };
     std::vector<uint32_t> indices = { 0, 1, 2 };
 
