@@ -13,7 +13,7 @@
 
 static const uint32_t window_w = 1920;
 static const uint32_t window_h = 1080;
-static const uint32_t depth = 8;
+static const uint32_t depth = 5;
 
 static const GLfloat phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
 
@@ -77,26 +77,20 @@ void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_
             std::cout << "(" << p[1].x << ", " << p[1].y << ")" << std::endl;
             std::cout << "(" << p[2].x << ", " << p[2].y << ")" << std::endl;
 
-            t = { //i[1], s, i[2],   //t123
+            t = { i[2], s, i[1],   //t123
                   i[1], s, i[0] }; //t124
 
-            //triangle t123;
-            //t123.t_123 = true;
-            //t123.points = { parent.points[1], points[s], parent.points[2] };
-            //t123.indices = { 1, s, 2 };
+            triangle t123;
+            t123.t_123 = true;
+            t123.points = { parent.points[2], p3, parent.points[1] };
+            t123.indices = { i[2], s, i[1] };
 
             triangle t124;
             t124.t_123 = false;
             t124.points = { parent.points[1], p3, parent.points[0] };
             t124.indices = { i[1], s, i[0] };
 
-            //std::cout << "all:" << std::endl;
-            //for (auto& blep : points) {
-            //    std::cout << "(" << blep.x << ", " << blep.y << ")" << std::endl;
-            //}
-            //std::cout << std::endl;
-
-            parent.subtriangles = { /*&t123,*/ &t124 };
+            parent.subtriangles = { &t123, &t124 };
         }
 
         indices.insert(indices.end(), t.begin(), t.end());
