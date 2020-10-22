@@ -5,14 +5,13 @@
 #include <glm/gtx/rotate_vector.hpp>
 
 #include <array>
-#include <iostream>
 #include <vector>
 
 #include "shader.hpp"
 
 static const uint32_t window_w = 1920;
 static const uint32_t window_h = 1080;
-static const uint32_t depth = 5;
+static const uint32_t depth = 7;
 
 static const glm::vec4 primary(0.7f, 0.7f, 0.0f, 1.0f);
 static const glm::vec4 background(0.2f, 0.2f, 0.4f, 1.0f);
@@ -26,7 +25,7 @@ struct triangle {
     std::vector<triangle*> subtriangles;
 };
 
-void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_t>& tri_indices, std::vector<uint32_t>& line_indices, uint32_t depth) {
+void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_t>& t123_indices, std::vector<uint32_t>& t124_indices, std::vector<uint32_t>& line_indices, uint32_t depth) {
     uint32_t s = points.size();
     std::array<glm::vec2, 3>& p = parent.points;
     std::array<uint32_t, 3>& i = parent.indices;
@@ -87,8 +86,6 @@ void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_
         }
 
         if (depth == 1) {
-            tri_indices.insert(tri_indices.end(), t.begin(), t.end());
-
             for (auto& tri : parent.subtriangles) {
                 for (uint32_t k = 0; k < 3; ++k) {
                     if (k != (tri->t_123 ? 2 : 1)) {
@@ -96,11 +93,18 @@ void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_
                         line_indices.push_back(tri->indices[((k + 1) % 3)]);
                     }
                 }
+
+                if (tri->t_123) {
+                    t123_indices.insert(t123_indices.end(), tri->indices.begin(), tri->indices.end());
+                }
+                else {
+                    t124_indices.insert(t124_indices.end(), tri->indices.begin(), tri->indices.end());
+                }
             }
         }
 
         for (auto& tri : parent.subtriangles) {
-            split(*tri, points, tri_indices, line_indices, depth - 1);
+            split(*tri, points, t123_indices, t124_indices, line_indices, depth - 1);
         }
     }
 
@@ -115,7 +119,8 @@ int main() {
 
     std::vector<triangle> triangles;
     std::vector<glm::vec2> points = { origin, point };
-    std::vector<uint32_t> tri_indices;
+    std::vector<uint32_t> t123_indices;
+    std::vector<uint32_t> t124_indices;
     std::vector<uint32_t> line_indices;
 
     for (uint32_t i = 1; i < poly; ++i) {
@@ -124,19 +129,20 @@ int main() {
     }
 
     for (auto& p : points) {
-        //p = glm::rotate(p, -1.0f * (poly_angle / 2.0f));
+        p = glm::rotate(p, poly_angle);
         p.x = (p.x / window_w) * window_h;
     }
 
     for (uint32_t i = 0; i < poly; i++) {
         std::array<uint32_t, 2> indices = { (i % (poly + 1)) + 1, ((i + 1) % poly) + 1 };
-        if (i % 2 == 0) std::swap(indices[0], indices[1]);
+        if (i & 1) std::swap(indices[0], indices[1]);
 
         triangle t;
         t.t_123 = true;
         t.points = { points[0], points[indices[0]], points[indices[1]] };
         t.indices = { 0, indices[0], indices[1] };
-        split(t, points, tri_indices, line_indices, depth);
+
+        split(t, points, t123_indices, t124_indices, line_indices, depth);
     }
 
     if(!glfwInit())
@@ -174,10 +180,32 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
     glBufferData(GL_ARRAY_BUFFER, points.size() * 4 * 2, &points[0], GL_STATIC_DRAW);
 
+    //uint32_t EBOS[3];
+    //glGenBuffers(3, EBOS);
+
+    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOS[0]);
+    //glBufferData(GL_ELEMENT_ARRAY_BUFFER, t123_indices.size() * 4, &t123_indices[0], GL_STATIC_DRAW);
+
+    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOS[1]);
+    //glBufferData(GL_ELEMENT_ARRAY_BUFFER, t124_indices.size() * 4, &t124_indices[0], GL_STATIC_DRAW);
+
+    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOS[2]);
+    //glBufferData(GL_ELEMENT_ARRAY_BUFFER, line_indices.size() * 4, &line_indices[0], GL_STATIC_DRAW);
+
+    //uint32_t EBO;
+    //glGenBuffers(1, &EBO);
+    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    //glBufferData(GL_ELEMENT_ARRAY_BUFFER, line_indices.size() * 4, &line_indices[0], GL_STATIC_DRAW);
+
+    //uint32_t EBO;
+    //glGenBuffers(1, &EBO);
+    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    //glBufferData(GL_ELEMENT_ARRAY_BUFFER, t123_indices.size() * 4, &t123_indices[0], GL_STATIC_DRAW);
+
     uint32_t EBO;
     glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, line_indices.size() * 4, &line_indices[0], GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, t124_indices.size() * 4, &t124_indices[0], GL_STATIC_DRAW);
 
     GLuint programID = Shader::loadShaders("vertex.vert", "fragment.frag");
     GLint paint = glGetUniformLocation(programID, "paint");
@@ -187,17 +215,19 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(programID);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         glUniform4fv(paint, 1, &primary[0]);
 
         glEnableVertexAttribArray(0);
-
         glBindVertexArray(vertexArrayID);
+
         glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (void*)0);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        glDrawElements(GL_LINES, line_indices.size(), GL_UNSIGNED_INT, 0);
+        //glDrawElements(GL_LINES, line_indices.size(), GL_UNSIGNED_INT, 0);
+        //glDrawElements(GL_TRIANGLES, t123_indices.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, t124_indices.size(), GL_UNSIGNED_INT, 0);
 
         glDisableVertexAttribArray(0);
         glfwSwapBuffers(window);
