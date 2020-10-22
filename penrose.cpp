@@ -15,7 +15,7 @@ static const uint32_t depth = 6;
 
 static const glm::vec4 primary(0.7f, 0.7f, 0.0f, 1.0f);
 static const glm::vec4 secondary(0.2f, 0.2f, 0.4f, 1.0f);
-static const glm::vec4 black(0.0f, 0.5f, 0.0f, 1.0f);
+static const glm::vec4 line(0.2f, 0.4f, 2.0f, 1.0f);
 static const glm::vec4 background(0.15f, 0.15f, 0.35f, 1.0f);
 
 static const GLfloat phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
@@ -93,6 +93,9 @@ void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_
                     if (k != (tri->t_123 ? 2 : 1)) {
                         line_indices.push_back(tri->indices[k]);
                         line_indices.push_back(tri->indices[((k + 1) % 3)]);
+                    }
+                    else {
+                        //TODO: if we get here and line is on outer edge, we don't want to add the t123/4 indices.
                     }
                 }
 
@@ -226,7 +229,7 @@ int main() {
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-        glUniform4fv(paint, 1, &black[0]);
+        glUniform4fv(paint, 1, &line[0]);
         glBindVertexArray(VAOs[2]);
         glDrawElements(GL_LINES, line_indices.size(), GL_UNSIGNED_INT, 0);
 
