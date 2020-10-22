@@ -15,7 +15,7 @@ static const uint32_t depth = 6;
 
 static const glm::vec4 primary(0.7f, 0.7f, 0.0f, 1.0f);
 static const glm::vec4 secondary(0.2f, 0.2f, 0.4f, 1.0f);
-static const glm::vec4 black(0.0f, 0.0f, 0.0f, 1.0f);
+static const glm::vec4 black(0.0f, 0.5f, 0.0f, 1.0f);
 static const glm::vec4 background(0.15f, 0.15f, 0.35f, 1.0f);
 
 static const GLfloat phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
@@ -173,15 +173,15 @@ int main() {
 
     glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
-    GLuint VAOs[3], VBOs[3], EBOs[3];
+    GLuint VAOs[3], VBO, EBOs[3];
 
     glGenVertexArrays(3, VAOs);
-    glGenBuffers(3, VBOs);
+    glGenBuffers(1, &VBO);
     glGenBuffers(3, EBOs);
 
     glBindVertexArray(VAOs[0]);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBOs[0]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, points.size() * 4 * 2, &points[0], GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOs[0]);
@@ -192,9 +192,6 @@ int main() {
 
     glBindVertexArray(VAOs[1]);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBOs[1]);
-    glBufferData(GL_ARRAY_BUFFER, points.size() * 4 * 2, &points[0], GL_STATIC_DRAW);
-
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOs[1]);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, t124_indices.size() * 4, &t124_indices[0], GL_STATIC_DRAW);
 
@@ -203,33 +200,11 @@ int main() {
 
     glBindVertexArray(VAOs[2]);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBOs[2]);
-    glBufferData(GL_ARRAY_BUFFER, points.size() * 4 * 2, &points[0], GL_STATIC_DRAW);
-
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOs[2]);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, line_indices.size() * 4, &line_indices[0], GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (void*)0);
     glEnableVertexAttribArray(0);
-
-    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOs[1]);
-    //glBufferData(GL_ELEMENT_ARRAY_BUFFER, t124_indices.size() * 4, &t124_indices[0], GL_STATIC_DRAW);
-
-    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOs[2]);
-    //glBufferData(GL_ELEMENT_ARRAY_BUFFER, line_indices.size() * 4, &line_indices[0], GL_STATIC_DRAW);
-
-    //uint32_t EBO;
-    //glGenBuffers(1, &EBO);
-    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    //glBufferData(GL_ELEMENT_ARRAY_BUFFER, line_indices.size() * 4, &line_indices[0], GL_STATIC_DRAW);
-
-    //uint32_t EBO;
-    //glGenBuffers(1, &EBO);
-    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    //glBufferData(GL_ELEMENT_ARRAY_BUFFER, t123_indices.size() * 4, &t123_indices[0], GL_STATIC_DRAW);
-
-    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOs[0]);
-    //glBufferData(GL_ELEMENT_ARRAY_BUFFER, t124_indices.size() * 4, &t124_indices[0], GL_STATIC_DRAW);
 
     GLuint programID = Shader::loadShaders("vertex.vert", "fragment.frag");
     GLint paint = glGetUniformLocation(programID, "paint");
@@ -242,19 +217,16 @@ int main() {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
         glUniform4fv(paint, 1, &secondary[0]);
-        glEnableVertexAttribArray(0);
         glBindVertexArray(VAOs[0]);
         glDrawElements(GL_TRIANGLES, t123_indices.size(), GL_UNSIGNED_INT, 0);
 
         glUniform4fv(paint, 1, &primary[0]);
-        glEnableVertexAttribArray(0);
         glBindVertexArray(VAOs[1]);
         glDrawElements(GL_TRIANGLES, t124_indices.size(), GL_UNSIGNED_INT, 0);
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
         glUniform4fv(paint, 1, &black[0]);
-        glEnableVertexAttribArray(0);
         glBindVertexArray(VAOs[2]);
         glDrawElements(GL_LINES, line_indices.size(), GL_UNSIGNED_INT, 0);
 
