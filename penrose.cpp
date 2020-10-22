@@ -2,7 +2,6 @@
 #include <GLFW/glfw3.h>
 
 #include <glm/glm.hpp>
-#include <glm/vec2.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 
 #include <array>
@@ -14,7 +13,9 @@
 static const uint32_t window_w = 1920;
 static const uint32_t window_h = 1080;
 static const uint32_t depth = 6;
-static const glm::vec3 primary(0.7f, 0.7f, 0.0f);
+
+static const glm::vec4 primary(0.7f, 0.7f, 0.0f, 1.0f);
+static const glm::vec4 background(0.2f, 0.2f, 0.4f, 1.0f);
 
 static const GLfloat phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
 
@@ -25,7 +26,7 @@ struct triangle {
     std::vector<triangle*> subtriangles;
 };
 
-void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_t>& indices, uint32_t depth) {
+void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_t>& tri_indices, std::vector<uint32_t>& line_indices, uint32_t depth) {
     uint32_t s = points.size();
     std::array<glm::vec2, 3>& p = parent.points;
     std::array<uint32_t, 3>& i = parent.indices;
@@ -85,10 +86,12 @@ void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_
             parent.subtriangles = { &t123, &t124 };
         }
 
-        indices.insert(indices.end(), t.begin(), t.end());
+        if (depth == 1) {
+            tri_indices.insert(tri_indices.end(), t.begin(), t.end());
+        }
 
         for (auto& tri : parent.subtriangles) {
-            split(*tri, points, indices, depth - 1);
+            split(*tri, points, tri_indices, line_indices, depth - 1);
         }
     }
 
@@ -101,15 +104,14 @@ int main() {
     glm::vec2 origin = glm::vec2(0.0f, 0.0f);
     glm::vec2 point = glm::vec2(0.0f, 1.0f);
 
+    std::vector<triangle> triangles;
     std::vector<glm::vec2> points = { origin, point };
-    std::vector<uint32_t> indices = { 0, 1, 2 };
+    std::vector<uint32_t> tri_indices;
+    std::vector<uint32_t> line_indices;
 
-    for (uint32_t i = 2; i < poly + 1; ++i) {
-        glm::vec2 next = glm::rotate(points[i - 1], poly_angle);
+    for (uint32_t i = 1; i < poly; ++i) {
+        glm::vec2 next = glm::rotate(points[i], poly_angle);
         points.push_back(next);
-        std::array<uint32_t, 3> t = { 0, ((i - 1) % (poly + 1)) + 1, (i % poly) + 1 };
-        if (i % 2 == 0) std::swap(t[1], t[2]);
-        indices.insert(indices.end(), t.begin(), t.end());
     }
 
     for (auto& p : points) {
@@ -117,14 +119,15 @@ int main() {
         p.x = (p.x / window_w) * window_h;
     }
 
-    std::vector<triangle> triangles;
+    for (uint32_t i = 0; i < poly; i++) {
+        std::array<uint32_t, 2> indices = { (i % (poly + 1)) + 1, ((i + 1) % poly) + 1 };
+        if (i % 2 == 0) std::swap(indices[0], indices[1]);
 
-    for (uint32_t j = 0; j < poly; j++) {
         triangle t;
         t.t_123 = true;
-        t.points = { points[indices[3 * j]], points[indices[(3 * j) + 1]], points[indices[(3 * j) + 2]] };
-        t.indices = { indices[3 * j], indices[(3 * j) + 1], indices[(3 * j) + 2] };
-        split(t, points, indices, depth);
+        t.points = { points[0], points[indices[0]], points[indices[1]] };
+        t.indices = { 0, indices[0], indices[1] };
+        split(t, points, tri_indices, line_indices, depth);
     }
 
     if(!glfwInit())
@@ -137,8 +140,7 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window;
-    window = glfwCreateWindow(window_w, window_h, "penrose", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(window_w, window_h, "penrose", NULL, NULL);
 
     if(window == NULL) {
         glfwTerminate();
@@ -166,18 +168,18 @@ int main() {
     uint32_t EBO;
     glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * 4, &indices[0], GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, tri_indices.size() * 4, &tri_indices[0], GL_STATIC_DRAW);
 
     GLuint programID = Shader::loadShaders("vertex.vert", "fragment.frag");
     GLint paint = glGetUniformLocation(programID, "paint");
 
     while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0 && paint != -1) {
-        glClearColor(0.2f, 0.2f, 0.4f, 1.0f);
+        glClearColor(background.x, background.y, background.z, background.w);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(programID);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        glUniform3fv(paint, 1, &primary[0]);
+        glUniform4fv(paint, 1, &primary[0]);
 
         glEnableVertexAttribArray(0);
 
@@ -186,7 +188,7 @@ int main() {
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (void*)0);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, tri_indices.size(), GL_UNSIGNED_INT, 0);
 
         glDisableVertexAttribArray(0);
         glfwSwapBuffers(window);
