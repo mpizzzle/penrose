@@ -12,7 +12,7 @@
 
 static const uint32_t window_w = 1920;
 static const uint32_t window_h = 1080;
-static const uint32_t depth = 6;
+static const uint32_t depth = 5;
 
 static const glm::vec4 primary(0.7f, 0.7f, 0.0f, 1.0f);
 static const glm::vec4 background(0.2f, 0.2f, 0.4f, 1.0f);
@@ -88,6 +88,15 @@ void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_
 
         if (depth == 1) {
             tri_indices.insert(tri_indices.end(), t.begin(), t.end());
+
+            for (auto& tri : parent.subtriangles) {
+                for (uint32_t k = 0; k < 3; ++k) {
+                    if (k != (tri->t_123 ? 2 : 1)) {
+                        line_indices.push_back(tri->indices[k]);
+                        line_indices.push_back(tri->indices[((k + 1) % 3)]);
+                    }
+                }
+            }
         }
 
         for (auto& tri : parent.subtriangles) {
@@ -97,7 +106,7 @@ void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_
 
     return;
 }
-
+ 
 int main() {
     uint32_t poly = 10;
     GLfloat poly_angle = glm::radians(360.0f / poly);
@@ -115,7 +124,7 @@ int main() {
     }
 
     for (auto& p : points) {
-        //p = glm::rotate(p, poly_angle / 2.0f);
+        //p = glm::rotate(p, -1.0f * (poly_angle / 2.0f));
         p.x = (p.x / window_w) * window_h;
     }
 
@@ -168,7 +177,7 @@ int main() {
     uint32_t EBO;
     glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, tri_indices.size() * 4, &tri_indices[0], GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, line_indices.size() * 4, &line_indices[0], GL_STATIC_DRAW);
 
     GLuint programID = Shader::loadShaders("vertex.vert", "fragment.frag");
     GLint paint = glGetUniformLocation(programID, "paint");
@@ -188,7 +197,7 @@ int main() {
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (void*)0);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        glDrawElements(GL_TRIANGLES, tri_indices.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_LINES, line_indices.size(), GL_UNSIGNED_INT, 0);
 
         glDisableVertexAttribArray(0);
         glfwSwapBuffers(window);
