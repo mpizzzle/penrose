@@ -11,12 +11,12 @@
 
 static const uint32_t window_w = 1920;
 static const uint32_t window_h = 1080;
-static const uint32_t depth = 7;
+static const uint32_t depth = 5;
 
 static const glm::vec4 primary(0.7f, 0.7f, 0.0f, 1.0f);
 static const glm::vec4 secondary(0.2f, 0.2f, 0.4f, 1.0f);
 static const glm::vec4 black(0.0f, 0.0f, 0.0f, 1.0f);
-static const glm::vec4 background(0.2f, 0.2f, 0.4f, 1.0f);
+static const glm::vec4 background(0.15f, 0.15f, 0.35f, 1.0f);
 
 static const GLfloat phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
 
