@@ -17,7 +17,7 @@ static const bool p2 = false;     //tiling type (p2, p3)
 
 static const glm::vec4 primary(0.7f, 0.0f, 0.35f, 1.0f);
 static const glm::vec4 secondary(0.35f, 1.0f, 0.7f, 1.0f);
-static const glm::vec4 line(1.0f, 0.35f, 1.0f, 1.0f);
+static const glm::vec4 line(0.0f, 0.35, 0.35, 1.0f);
 static const glm::vec4 background(0.35f, 0.15f, 0.35f, 1.0f);
 
 static const float phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
