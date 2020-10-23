@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 
+#include <algorithm>
 #include <array>
 #include <vector>
 
@@ -11,20 +12,20 @@
 
 static const uint32_t window_w = 1920;
 static const uint32_t window_h = 1080;
-static const uint32_t depth = 6;
-static const uint32_t tiling_type = 2;
+static const uint32_t depth = 6; //recursion depth
+static const bool p2 = false;     //tiling type (p2, p3)
 
-static const glm::vec4 primary(0.7f, 0.7f, 0.0f, 1.0f);
-static const glm::vec4 secondary(0.2f, 0.2f, 0.4f, 1.0f);
-static const glm::vec4 line(0.2f, 0.4f, 2.0f, 1.0f);
-static const glm::vec4 background(0.15f, 0.15f, 0.35f, 1.0f);
+static const glm::vec4 primary(0.7f, 0.0f, 0.35f, 1.0f);
+static const glm::vec4 secondary(0.35f, 1.0f, 0.7f, 1.0f);
+static const glm::vec4 line(0.7f, 0.35f, 1.0f, 1.0f);
+static const glm::vec4 background(0.35f, 0.15f, 0.35f, 1.0f);
 
 static const float phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
 
 struct triangle {
     bool t_123;
     std::array<uint32_t, 3> indices;
-    std::vector<triangle*> subtriangles;
+    std::vector<triangle*> sub_triangles;
 };
 
 void split(triangle& p, std::vector<glm::vec2>& points, std::array<std::vector<uint32_t>, 3>& indices, uint32_t depth) {
@@ -32,46 +33,42 @@ void split(triangle& p, std::vector<glm::vec2>& points, std::array<std::vector<u
     std::array<uint32_t, 3>& i = p.indices;
 
     if (depth > 0) {
-        if (p.t_123) {
-            //distance d = √((x1 − x0)2 + (y1 − y0)2)
-            //ratio t = dt / d, in this case dt = phi * d so t = phi (no need to calc d)
-            //therefore, (xt, yt) = (((1 − phi) x0 + phi * x1),((1 − phi) y0 + phi * y1))
-
+        if (p.t_123 ^ !p2) {
             points.push_back(glm::vec2(((1.0f - phi) * points[i[0]].x) + (phi * points[i[2]].x), ((1.0f - phi) * points[i[0]].y) + (phi * points[i[2]].y)));
-            points.push_back(glm::vec2(((1.0f - phi) * points[i[1]].x) + (phi * points[i[0]].x), ((1.0f - phi) * points[i[1]].y) + (phi * points[i[0]].y)));
+            points.push_back(glm::vec2(((1.0f - phi) * points[i[p2]].x) + (phi * points[i[!p2]].x), ((1.0f - phi) * points[i[p2]].y) + (phi * points[i[!p2]].y)));
 
-            triangle t123_1;
-            t123_1.t_123 = true;
-            t123_1.indices = { i[1], i[2], s };
+            triangle t1;
+            t1.t_123 = p2;
+            t1.indices = { i[(!p2) + 1], p2 ? i[2] : s, p2 ? s : i[1] };
 
-            triangle t123_2;
-            t123_2.t_123 = true;
-            t123_2.indices = { i[1], s + 1, s };
+            triangle t2;
+            t2.t_123 = true;
+            t2.indices = { p2 ? i[1] : s, s + 1, p2 ? s : i[1] };
 
-            triangle t124;
-            t124.t_123 = false;
-            t124.indices = { s, s + 1, i[0] };
+            triangle t3;
+            t3.t_123 = false;
+            t3.indices = { s, s + 1, i[0] };
 
-            p.subtriangles = { &t123_1, &t123_2, &t124 };
+            p.sub_triangles = { &t1, &t2, &t3 };
         }
         else {
-            points.push_back(glm::vec2(((1.0f - phi) * points[i[2]].x) + (phi * points[i[0]].x), ((1.0f - phi) * points[i[2]].y) + (phi * points[i[0]].y)));
+            points.push_back(glm::vec2(((1.0f - phi) * points[i[p2 * 2]].x) + (phi * points[i[!p2]].x), ((1.0f - phi) * points[i[p2 * 2]].y) + (phi * points[i[!p2]].y)));
 
-            triangle t123;
-            t123.t_123 = true;
-            t123.indices = { i[2], s, i[1] };
+            triangle t1;
+            t1.t_123 = true;
+            t1.indices = { i[2], s, i[1] };
 
-            triangle t124;
-            t124.t_123 = false;
-            t124.indices = { i[1], s, i[0] };
+            triangle t2;
+            t2.t_123 = false;
+            t2.indices = { i[(!p2) + 1], s, i[0] };
 
-            p.subtriangles = { &t123, &t124 };
+            p.sub_triangles = { &t1, &t2 };
         }
 
-        for (auto& t : p.subtriangles) {
+        for (auto& t : p.sub_triangles) {
             if (depth == 1) {
                 for (uint32_t k = 0; k < 3; ++k) {
-                    if (k != (t->t_123 ? 2 : 1)) {
+                    if (k != (t->t_123 ^ !p2 ? 2 : 1)) {
                         indices[2].push_back(t->indices[k]);
                         indices[2].push_back(t->indices[((k + 1) % 3)]);
                     }

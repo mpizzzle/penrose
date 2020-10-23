@@ -1,8 +1,12 @@
 # penrose
 
-work in progress.
+program for generating penrose tilings.
 
 ![alt text](https://raw.githubusercontent.com/mpizzzle/penrose/master/scrot.png)
+
+![alt text](https://raw.githubusercontent.com/mpizzzle/penrose/master/scrot2.png)
+
+work in progress.
 
 ## basics:
 * https://tartarus.org/~simon/20110412-penrose/penrose.xhtml
