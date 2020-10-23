@@ -13,7 +13,7 @@
 static const uint32_t window_w = 1920;
 static const uint32_t window_h = 1080;
 static const uint32_t depth = 6; //recursion depth
-static const bool p2 = false;     //tiling type (p2, p3)
+static const bool p2 = false;    //tiling type (p2, p3)
 
 static const glm::vec4 primary(0.7f, 0.0f, 0.35f, 1.0f);
 static const glm::vec4 secondary(0.35f, 1.0f, 0.7f, 1.0f);
@@ -34,8 +34,8 @@ void split(triangle& p, std::vector<glm::vec2>& points, std::array<std::vector<u
 
     if (depth > 0) {
         if (p.t_123 ^ !p2) {
-            points.push_back(glm::vec2(((1.0f - phi) * points[i[0]].x) + (phi * points[i[2]].x), ((1.0f - phi) * points[i[0]].y) + (phi * points[i[2]].y)));
-            points.push_back(glm::vec2(((1.0f - phi) * points[i[p2]].x) + (phi * points[i[!p2]].x), ((1.0f - phi) * points[i[p2]].y) + (phi * points[i[!p2]].y)));
+            points.push_back(glm::vec2(((1.0f - phi) * points[i[0]]) + (phi * points[i[2]])));
+            points.push_back(glm::vec2(((1.0f - phi) * points[i[p2]]) + (phi * points[i[!p2]])));
 
             triangle t1;
             t1.t_123 = p2;
@@ -52,7 +52,7 @@ void split(triangle& p, std::vector<glm::vec2>& points, std::array<std::vector<u
             p.sub_triangles = { &t1, &t2, &t3 };
         }
         else {
-            points.push_back(glm::vec2(((1.0f - phi) * points[i[p2 * 2]].x) + (phi * points[i[!p2]].x), ((1.0f - phi) * points[i[p2 * 2]].y) + (phi * points[i[!p2]].y)));
+            points.push_back(glm::vec2(((1.0f - phi) * points[i[p2 * 2]]) + (phi * points[i[!p2]])));
 
             triangle t1;
             t1.t_123 = true;
