@@ -27,11 +27,9 @@ struct triangle {
     std::vector<triangle*> subtriangles;
 };
 
-void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_t>& t123_indices, std::vector<uint32_t>& t124_indices, std::vector<uint32_t>& line_indices, uint32_t depth) {
+void split(triangle& parent, std::vector<glm::vec2>& points, std::array<std::vector<uint32_t>, 3>& indices, uint32_t depth) {
     uint32_t s = points.size();
     std::array<glm::vec2, 3>& p = parent.points;
-    std::array<uint32_t, 3>& i = parent.indices;
-    std::vector<uint32_t> t;
 
     if (depth > 0) {
         if (parent.t_123) {
@@ -39,50 +37,38 @@ void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_
             //ratio t = dt / d, in this case dt = phi * d so t = phi (no need to calc d)
             //therefore, (xt, yt) = (((1 − phi) x0 + phi * x1),((1 − phi) y0 + phi * y1))
 
-            glm::vec2 p1(((1.0f - phi) * p[0].x) + (phi * p[2].x), ((1.0f - phi) * p[0].y) + (phi * p[2].y));
-            glm::vec2 p2(((1.0f - phi) * p[1].x) + (phi * p[0].x), ((1.0f - phi) * p[1].y) + (phi * p[0].y));
-
-            points.push_back(p1);
-            points.push_back(p2);
-
-            t = { i[1], i[2], s,    //t123 1
-                  i[1], s + 1, s,   //t123 2
-                  s, s + 1, i[0] }; //t124
+            points.push_back(glm::vec2(((1.0f - phi) * p[0].x) + (phi * p[2].x), ((1.0f - phi) * p[0].y) + (phi * p[2].y)));
+            points.push_back(glm::vec2(((1.0f - phi) * p[1].x) + (phi * p[0].x), ((1.0f - phi) * p[1].y) + (phi * p[0].y)));
 
             triangle t123_1;
             t123_1.t_123 = true;
-            t123_1.points = { parent.points[1], parent.points[2], p1 };
-            t123_1.indices = { i[1], i[2], s };
+            t123_1.points = { parent.points[1], parent.points[2], points[s] };
+            t123_1.indices = { parent.indices[1], parent.indices[2], s };
 
             triangle t123_2;
             t123_2.t_123 = true;
-            t123_2.points = { parent.points[1], p2, p1 };
-            t123_2.indices = { i[1], s + 1, s };
+            t123_2.points = { parent.points[1], points[s + 1], points[s] };
+            t123_2.indices = { parent.indices[1], s + 1, s };
 
             triangle t124;
             t124.t_123 = false;
-            t124.points = { p1, p2, parent.points[0] };
-            t124.indices = { s, s + 1, i[0] };
+            t124.points = { points[s], points[s + 1], parent.points[0] };
+            t124.indices = { s, s + 1, parent.indices[0] };
 
             parent.subtriangles = { &t123_1, &t123_2, &t124 };
         }
         else {
-            glm::vec2 p3(((1.0f - phi) * p[2].x) + (phi * p[0].x), ((1.0f - phi) * p[2].y) + (phi * p[0].y));
-
-            points.push_back(p3);
-
-            t = { i[2], s, i[1],   //t123
-                  i[1], s, i[0] }; //t124
+            points.push_back(glm::vec2(((1.0f - phi) * p[2].x) + (phi * p[0].x), ((1.0f - phi) * p[2].y) + (phi * p[0].y)));
 
             triangle t123;
             t123.t_123 = true;
-            t123.points = { parent.points[2], p3, parent.points[1] };
-            t123.indices = { i[2], s, i[1] };
+            t123.points = { parent.points[2], points[s], parent.points[1] };
+            t123.indices = { parent.indices[2], s, parent.indices[1] };
 
             triangle t124;
             t124.t_123 = false;
-            t124.points = { parent.points[1], p3, parent.points[0] };
-            t124.indices = { i[1], s, i[0] };
+            t124.points = { parent.points[1], points[s], parent.points[0] };
+            t124.indices = { parent.indices[1], s, parent.indices[0] };
 
             parent.subtriangles = { &t123, &t124 };
         }
@@ -91,25 +77,17 @@ void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_
             for (auto& tri : parent.subtriangles) {
                 for (uint32_t k = 0; k < 3; ++k) {
                     if (k != (tri->t_123 ? 2 : 1)) {
-                        line_indices.push_back(tri->indices[k]);
-                        line_indices.push_back(tri->indices[((k + 1) % 3)]);
-                    }
-                    else {
-                        //TODO: if we get here and line is on outer edge, we don't want to add the t123/4 indices.
+                        indices[2].push_back(tri->indices[k]);
+                        indices[2].push_back(tri->indices[((k + 1) % 3)]);
                     }
                 }
 
-                if (tri->t_123) {
-                    t123_indices.insert(t123_indices.end(), tri->indices.begin(), tri->indices.end());
-                }
-                else {
-                    t124_indices.insert(t124_indices.end(), tri->indices.begin(), tri->indices.end());
-                }
+                indices[tri->t_123].insert(indices[tri->t_123].end(), tri->indices.begin(), tri->indices.end());
             }
         }
 
         for (auto& tri : parent.subtriangles) {
-            split(*tri, points, t123_indices, t124_indices, line_indices, depth - 1);
+            split(*tri, points, indices, depth - 1);
         }
     }
 
@@ -119,14 +97,9 @@ void split(triangle& parent, std::vector<glm::vec2>& points, std::vector<uint32_
 int main() {
     uint32_t poly = 10;
     GLfloat poly_angle = glm::radians(360.0f / poly);
-    glm::vec2 origin = glm::vec2(0.0f, 0.0f);
-    glm::vec2 point = glm::vec2(0.0f, 1.0f);
 
-    std::vector<triangle> triangles;
-    std::vector<glm::vec2> points = { origin, point };
-    std::vector<uint32_t> t123_indices;
-    std::vector<uint32_t> t124_indices;
-    std::vector<uint32_t> line_indices;
+    std::vector<glm::vec2> points = { glm::vec2(0.0f, 0.0f), glm::vec2(0.0f, 1.0f) };
+    std::array<std::vector<uint32_t>, 3> indices;
 
     for (uint32_t i = 1; i < poly; ++i) {
         glm::vec2 next = glm::rotate(points[i], poly_angle);
@@ -139,15 +112,15 @@ int main() {
     }
 
     for (uint32_t i = 0; i < poly; i++) {
-        std::array<uint32_t, 2> indices = { (i % (poly + 1)) + 1, ((i + 1) % poly) + 1 };
-        if (i & 1) std::swap(indices[0], indices[1]);
+        std::array<uint32_t, 2> p = { (i % (poly + 1)) + 1, ((i + 1) % poly) + 1 };
+        if (i & 1) std::swap(p[0], p[1]);
 
         triangle t;
         t.t_123 = true;
-        t.points = { points[0], points[indices[0]], points[indices[1]] };
-        t.indices = { 0, indices[0], indices[1] };
+        t.points = { points[0], points[p[0]], points[p[1]] };
+        t.indices = { 0, p[0], p[1] };
 
-        split(t, points, t123_indices, t124_indices, line_indices, depth);
+        split(t, points, indices, depth);
     }
 
     if(!glfwInit())
@@ -182,32 +155,18 @@ int main() {
     glGenBuffers(1, &VBO);
     glGenBuffers(3, EBOs);
 
-    glBindVertexArray(VAOs[0]);
+    for (int i = 0; i < 3; ++i) {
+        glBindVertexArray(VAOs[i]);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, points.size() * 4 * 2, &points[0], GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, points.size() * 4 * 2, &points[0], GL_STATIC_DRAW);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOs[0]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, t123_indices.size() * 4, &t123_indices[0], GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOs[i]);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices[i].size() * 4, &indices[i][0], GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glBindVertexArray(VAOs[1]);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOs[1]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, t124_indices.size() * 4, &t124_indices[0], GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glBindVertexArray(VAOs[2]);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOs[2]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, line_indices.size() * 4, &line_indices[0], GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (void*)0);
-    glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (void*)0);
+        glEnableVertexAttribArray(0);
+    }
 
     GLuint programID = Shader::loadShaders("vertex.vert", "fragment.frag");
     GLint paint = glGetUniformLocation(programID, "paint");
@@ -221,17 +180,17 @@ int main() {
 
         glUniform4fv(paint, 1, &secondary[0]);
         glBindVertexArray(VAOs[0]);
-        glDrawElements(GL_TRIANGLES, t123_indices.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, indices[0].size(), GL_UNSIGNED_INT, 0);
 
         glUniform4fv(paint, 1, &primary[0]);
         glBindVertexArray(VAOs[1]);
-        glDrawElements(GL_TRIANGLES, t124_indices.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, indices[1].size(), GL_UNSIGNED_INT, 0);
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
         glUniform4fv(paint, 1, &line[0]);
         glBindVertexArray(VAOs[2]);
-        glDrawElements(GL_LINES, line_indices.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_LINES, indices[2].size(), GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
