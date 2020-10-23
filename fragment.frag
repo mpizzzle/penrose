@@ -1,7 +1,7 @@
 #version 330 core
 
-uniform vec4 paint;
+uniform vec3 paint;
 
 void main() {
-    gl_FragColor = paint;
+    gl_FragColor = vec4(paint, 1.0f);
 }

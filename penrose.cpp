@@ -4,7 +4,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 
-#include <algorithm>
 #include <array>
 #include <vector>
 
@@ -15,10 +14,8 @@ static const uint32_t window_h = 1080;
 static const uint32_t depth = 6; //recursion depth
 static const bool p2 = false;    //tiling type (p2, p3)
 
-static const glm::vec4 primary(0.7f, 0.0f, 0.35f, 1.0f);
-static const glm::vec4 secondary(0.35f, 1.0f, 0.7f, 1.0f);
-static const glm::vec4 line(0.0f, 0.35, 0.35, 1.0f);
-static const glm::vec4 background(0.35f, 0.15f, 0.35f, 1.0f);
+static const std::array<glm::vec3, 4> colours = //primary, secondary, line, background
+    { glm::vec3(0.7f, 0.0f, 0.35f), glm::vec3(0.35f, 1.0f, 0.7f), glm::vec3(0.0f, 0.35, 0.35), glm::vec3 (0.35f, 0.15f, 0.35f) };
 
 static const float phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
 
@@ -161,25 +158,18 @@ int main() {
     GLint paint = glGetUniformLocation(programID, "paint");
 
     while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0 && paint != -1) {
-        glClearColor(background.x, background.y, background.z, background.w);
+        glClearColor(colours[3].x, colours[3].y, colours[3].z, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(programID);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-        glUniform4fv(paint, 1, &primary[0]);
-        glBindVertexArray(VAOs[0]);
-        glDrawElements(GL_TRIANGLES, indices[0].size(), GL_UNSIGNED_INT, 0);
-
-        glUniform4fv(paint, 1, &secondary[0]);
-        glBindVertexArray(VAOs[1]);
-        glDrawElements(GL_TRIANGLES, indices[1].size(), GL_UNSIGNED_INT, 0);
-
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-        glUniform4fv(paint, 1, &line[0]);
-        glBindVertexArray(VAOs[2]);
-        glDrawElements(GL_LINES, indices[2].size(), GL_UNSIGNED_INT, 0);
+        for (int i = 0; i < 3; ++i) {
+            glPolygonMode(GL_FRONT_AND_BACK, i < 2 ? GL_FILL : GL_LINE);
+            glUniform3fv(paint, 1, &colours[i][0]);
+            glBindVertexArray(VAOs[i]);
+            glDrawElements(i < 2 ? GL_TRIANGLES : GL_LINES, indices[i].size(), GL_UNSIGNED_INT, 0);
+        }
 
         glfwSwapBuffers(window);
         glfwPollEvents();
