@@ -178,11 +178,11 @@ int main() {
         glUseProgram(programID);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-        glUniform4fv(paint, 1, &secondary[0]);
+        glUniform4fv(paint, 1, &primary[0]);
         glBindVertexArray(VAOs[0]);
         glDrawElements(GL_TRIANGLES, indices[0].size(), GL_UNSIGNED_INT, 0);
 
-        glUniform4fv(paint, 1, &primary[0]);
+        glUniform4fv(paint, 1, &secondary[0]);
         glBindVertexArray(VAOs[1]);
         glDrawElements(GL_TRIANGLES, indices[1].size(), GL_UNSIGNED_INT, 0);
 
