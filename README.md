@@ -2,8 +2,10 @@
 
 program for generating penrose tilings.
 
+## P2 example:
 ![alt text](https://raw.githubusercontent.com/mpizzzle/penrose/master/scrot.png)
 
+## P3 example:
 ![alt text](https://raw.githubusercontent.com/mpizzzle/penrose/master/scrot2.png)
 
 work in progress.
