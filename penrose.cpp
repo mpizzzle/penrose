@@ -19,10 +19,16 @@ static const float phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
 static const std::array<glm::vec3, 4> colours = //primary, secondary, line, background
     { glm::vec3(0.7f, 0.0f, 0.35f), glm::vec3(0.35f, 1.0f, 0.7f), glm::vec3(0.0f, 0.35, 0.35), glm::vec3 (0.35f, 0.15f, 0.35f) };
 
-struct triangle {
+class triangle {
+public:
     bool t_123;
     std::array<uint32_t, 3> indices;
     std::vector<triangle*> sub_triangles;
+
+    triangle(bool t_123, std::array<uint32_t, 3> indices) {
+        this->t_123 = t_123;
+        this->indices = indices;
+    }
 };
 
 void split(triangle& p, std::vector<glm::vec2>& points, std::array<std::vector<uint32_t>, 3>& indices, uint32_t depth) {
@@ -34,30 +40,17 @@ void split(triangle& p, std::vector<glm::vec2>& points, std::array<std::vector<u
             points.push_back(glm::vec2(((1.0f - phi) * points[i[0]]) + (phi * points[i[2]])));
             points.push_back(glm::vec2(((1.0f - phi) * points[i[p2]]) + (phi * points[i[!p2]])));
 
-            triangle t1;
-            t1.t_123 = p2;
-            t1.indices = { i[(!p2) + 1], p2 ? i[2] : s, p2 ? s : i[1] };
-
-            triangle t2;
-            t2.t_123 = true;
-            t2.indices = { p2 ? i[1] : s, s + 1, p2 ? s : i[1] };
-
-            triangle t3;
-            t3.t_123 = false;
-            t3.indices = { s, s + 1, i[0] };
+            triangle t1(p2, std::array<uint32_t, 3>({ i[(!p2) + 1], p2 ? i[2] : s, p2 ? s : i[1] }));
+            triangle t2(true, std::array<uint32_t, 3>({ p2 ? i[1] : s, s + 1, p2 ? s : i[1] }));
+            triangle t3(false, std::array<uint32_t, 3>({ s, s + 1, i[0] }));
 
             p.sub_triangles = { &t1, &t2, &t3 };
         }
         else {
             points.push_back(glm::vec2(((1.0f - phi) * points[i[p2 * 2]]) + (phi * points[i[!p2]])));
 
-            triangle t1;
-            t1.t_123 = true;
-            t1.indices = { i[2], s, i[1] };
-
-            triangle t2;
-            t2.t_123 = false;
-            t2.indices = { i[(!p2) + 1], s, i[0] };
+            triangle t1(true, std::array<uint32_t, 3>({ i[2], s, i[1] }));
+            triangle t2(false, std::array<uint32_t, 3>({ i[(!p2) + 1], s, i[0] }));
 
             p.sub_triangles = { &t1, &t2 };
         }
@@ -101,9 +94,7 @@ int main() {
     for (uint32_t i = 0; i < poly; i++) {
         std::array<uint32_t, 2> p = { (i % (poly + 1)) + 1, ((i + 1) % poly) + 1 };
 
-        triangle t;
-        t.t_123 = true;
-        t.indices = { 0, p[i & 1], p[!(i & 1)] };
+        triangle t(true, std::array<uint32_t, 3>({ 0, p[i & 1], p[!(i & 1)] }));
 
         split(t, points, indices, depth);
     }
