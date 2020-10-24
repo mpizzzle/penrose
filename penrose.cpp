@@ -1,3 +1,8 @@
+/*
+ * © 2020 Michael Percival <m@michaelpercival.xyz>
+ *   See LICENSE file for copyright and license details.
+ */
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
@@ -13,7 +18,8 @@ static const uint32_t window_w = 1920;
 static const uint32_t window_h = 1080;
 static const uint32_t depth = 6;       //recursion depth
 static const bool p2 = false;          //tiling type (p2, p3)
-static const float line_width = 2.0f;
+static const float line_w = 2.0f;      //line width
+
 static const float phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
 
 static const std::array<glm::vec3, 4> colours = //primary, secondary, line, background
@@ -130,7 +136,7 @@ int main() {
     glGenVertexArrays(3, VAOs);
     glGenBuffers(1, &VBO);
     glGenBuffers(3, EBOs);
-    glLineWidth(line_width);
+    glLineWidth(line_w);
 
     for (int i = 0; i < 3; ++i) {
         glBindVertexArray(VAOs[i]);

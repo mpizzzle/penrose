@@ -1,3 +1,8 @@
+/*
+ * © 2020 Michael Percival <m@michaelpercival.xyz>
+ *   See LICENSE file for copyright and license details.
+ */
+
 #include <GL/glew.h>
 
 #include <string>

@@ -1,3 +1,8 @@
+//
+// © 2020 Michael Percival <m@michaelpercival.xyz>
+//   See LICENSE file for copyright and license details.
+//
+
 #version 330 core
 
 layout(location = 0) in vec3 vertexPosition_modelspace;
