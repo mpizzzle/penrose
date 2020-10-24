@@ -11,13 +11,13 @@
 
 static const uint32_t window_w = 1920;
 static const uint32_t window_h = 1080;
-static const uint32_t depth = 6; //recursion depth
-static const bool p2 = false;    //tiling type (p2, p3)
+static const uint32_t depth = 6;       //recursion depth
+static const bool p2 = false;          //tiling type (p2, p3)
+static const float line_width = 2.0f;
+static const float phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
 
 static const std::array<glm::vec3, 4> colours = //primary, secondary, line, background
     { glm::vec3(0.7f, 0.0f, 0.35f), glm::vec3(0.35f, 1.0f, 0.7f), glm::vec3(0.0f, 0.35, 0.35), glm::vec3 (0.35f, 0.15f, 0.35f) };
-
-static const float phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
 
 struct triangle {
     bool t_123;
@@ -100,11 +100,10 @@ int main() {
 
     for (uint32_t i = 0; i < poly; i++) {
         std::array<uint32_t, 2> p = { (i % (poly + 1)) + 1, ((i + 1) % poly) + 1 };
-        if (i & 1) std::swap(p[0], p[1]);
 
         triangle t;
         t.t_123 = true;
-        t.indices = { 0, p[0], p[1] };
+        t.indices = { 0, p[i & 1], p[!(i & 1)] };
 
         split(t, points, indices, depth);
     }
@@ -140,6 +139,7 @@ int main() {
     glGenVertexArrays(3, VAOs);
     glGenBuffers(1, &VBO);
     glGenBuffers(3, EBOs);
+    glLineWidth(line_width);
 
     for (int i = 0; i < 3; ++i) {
         glBindVertexArray(VAOs[i]);
