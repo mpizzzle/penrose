@@ -10,15 +10,22 @@ program for generating penrose tilings.
 
 work in progress.
 
-## basics:
+## how does it work?
 * https://tartarus.org/~simon/20110412-penrose/penrose.xhtml
 
 ## dependencies:
 * [glfw](https://www.glfw.org/)
 * [GLEW](https://github.com/nigels-com/glew)
-* libGL
+* [libGL](https://dri.freedesktop.org/wiki/libGL/)
 * [glm](https://glm.g-truc.net/)
 
-## to compile and run:
+## compile and run:
 * make
 * ./penrose
+
+linux only for now.
+
+## license
+* GPL-3.0-or-later
+* © 2020 Michael Percival <m@michaelpercival.xyz>
+* See LICENSE file for copyright and license details.
