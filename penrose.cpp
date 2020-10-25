@@ -11,19 +11,17 @@
 
 #include <array>
 #include <vector>
+#include <random>
 
 #include "shader.hpp"
 
 static const uint32_t window_w = 1920;
 static const uint32_t window_h = 1080;
-static const uint32_t depth = 6;       //recursion depth
+static const uint32_t depth = 7;       //recursion depth
 static const bool p2 = false;          //tiling type (p2, p3)
 static const float line_w = 2.0f;      //line width
 
 static const float phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
-
-static const std::array<glm::vec3, 4> colours = //primary, secondary, line, background
-    { glm::vec3(0.7f, 0.0f, 0.35f), glm::vec3(0.35f, 1.0f, 0.7f), glm::vec3(0.0f, 0.35, 0.35), glm::vec3 (0.35f, 0.15f, 0.35f) };
 
 class triangle {
 public:
@@ -37,7 +35,7 @@ public:
     }
 };
 
-void split(triangle& p, std::vector<glm::vec2>& points, std::array<std::vector<uint32_t>, 3>& indices, uint32_t depth) {
+void split(triangle& p, std::vector<glm::vec2>& points, std::array<std::vector<uint32_t>, 5>& indices, uint32_t depth) {
     uint32_t s = points.size();
     std::array<uint32_t, 3>& i = p.indices;
 
@@ -65,12 +63,12 @@ void split(triangle& p, std::vector<glm::vec2>& points, std::array<std::vector<u
             if (depth == 1) {
                 for (uint32_t k = 0; k < 3; ++k) {
                     if (k != (t->t_123 ^ !p2 ? 2 : 1)) {
-                        indices[2].push_back(t->indices[k]);
-                        indices[2].push_back(t->indices[((k + 1) % 3)]);
+                        indices[indices.size() - 1].push_back(t->indices[k]);
+                        indices[indices.size() - 1].push_back(t->indices[((k + 1) % 3)]);
                     }
                 }
 
-                indices[t->t_123].insert(indices[t->t_123].end(), t->indices.begin(), t->indices.end());
+                indices[t->t_123 + (p.t_123 ? 0 : 2)].insert(indices[t->t_123 + (p.t_123 ? 0 : 2)].end(), t->indices.begin(), t->indices.end());
             }
 
             split(*t, points, indices, depth - 1);
@@ -79,13 +77,20 @@ void split(triangle& p, std::vector<glm::vec2>& points, std::array<std::vector<u
 
     return;
 }
- 
+
 int main() {
+    static std::default_random_engine e(std::random_device{}());
+    static std::uniform_real_distribution<> d(0, 1);
+
+    std::vector<glm::vec3> colours = { glm::vec3(d(e), d(e), d(e)), glm::vec3(d(e), d(e), d(e)),
+                                       glm::vec3(d(e), d(e), d(e)), glm::vec3(d(e), d(e), d(e)),
+                                       glm::vec3(d(e), d(e), d(e)), glm::vec3(d(e), d(e), d(e)) };
+
     uint32_t poly = 10;
     float poly_angle = glm::radians(360.0f / poly);
 
     std::vector<glm::vec2> points = { glm::vec2(0.0f, 0.0f), glm::vec2(0.0f, 1.0f) };
-    std::array<std::vector<uint32_t>, 3> indices;
+    std::array<std::vector<uint32_t>, 5> indices;
 
     for (uint32_t i = 1; i < poly; ++i) {
         glm::vec2 next = glm::rotate(points[i], poly_angle);
@@ -131,14 +136,14 @@ int main() {
 
     glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
-    uint32_t VAOs[3], VBO, EBOs[3];
+    uint32_t VAOs[5], VBO, EBOs[5];
 
-    glGenVertexArrays(3, VAOs);
+    glGenVertexArrays(5, VAOs);
     glGenBuffers(1, &VBO);
-    glGenBuffers(3, EBOs);
+    glGenBuffers(5, EBOs);
     glLineWidth(line_w);
 
-    for (int i = 0; i < 3; ++i) {
+    for (uint32_t i = 0; i < indices.size(); ++i) {
         glBindVertexArray(VAOs[i]);
 
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -155,17 +160,17 @@ int main() {
     GLint paint = glGetUniformLocation(programID, "paint");
 
     while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0 && paint != -1) {
-        glClearColor(colours[3].x, colours[3].y, colours[3].z, 1.0f);
+        glClearColor(colours.back().x, colours.back().y, colours.back().z, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(programID);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-        for (int i = 0; i < 3; ++i) {
-            glPolygonMode(GL_FRONT_AND_BACK, i < 2 ? GL_FILL : GL_LINE);
+        for (uint32_t i = 0; i < indices.size(); ++i) {
+            glPolygonMode(GL_FRONT_AND_BACK, i < indices.size() - 1 ? GL_FILL : GL_LINE);
             glUniform3fv(paint, 1, &colours[i][0]);
             glBindVertexArray(VAOs[i]);
-            glDrawElements(i < 2 ? GL_TRIANGLES : GL_LINES, indices[i].size(), GL_UNSIGNED_INT, 0);
+            glDrawElements(i < indices.size() - 1 ? GL_TRIANGLES : GL_LINES, indices[i].size(), GL_UNSIGNED_INT, 0);
         }
 
         glfwSwapBuffers(window);
