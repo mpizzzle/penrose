@@ -18,6 +18,7 @@ work in progress.
 * [GLEW](https://github.com/nigels-com/glew)
 * [libGL](https://dri.freedesktop.org/wiki/libGL/)
 * [glm](https://glm.g-truc.net/)
+* [libpng](http://www.libpng.org/pub/png/libpng.html)
 
 ## compile and run:
 * make
