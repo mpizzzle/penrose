@@ -10,9 +10,9 @@
 #include <glm/gtx/rotate_vector.hpp>
 
 #include <array>
-#include <iostream>
-#include <vector>
 #include <random>
+#include <string>
+#include <vector>
 
 #include <png.h>
 
@@ -24,6 +24,7 @@ static const uint32_t window_h = 1080 * 4;
 static const uint32_t depth = 10;      //recursion depth
 static const bool p2 = false;          //tiling type (p2, p3)
 static const float line_w = 2.0f;      //line width
+static const std::string file_name = "penrose.png";
 
 static const float phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
 
@@ -182,7 +183,6 @@ int main() {
         glfwPollEvents();
     }
 
-
     glPixelStorei(GL_PACK_ALIGNMENT, 4);
     glReadBuffer(GL_FRONT);
 
@@ -191,12 +191,12 @@ int main() {
 
     png_bytep* row_pointers = (png_bytep*) malloc(sizeof(png_bytep) * frame_h);
 
-    for (int yy = 0; yy < frame_h; ++yy) {
-        row_pointers[yy] = (png_byte*) malloc((4 * sizeof(png_byte)) * frame_w);
-        glReadPixels(0, yy, frame_w, 1, GL_RGBA, GL_UNSIGNED_BYTE, row_pointers[yy]);
+    for (int y = 0; y < frame_h; ++y) {
+        row_pointers[y] = (png_byte*) malloc((4 * sizeof(png_byte)) * frame_w);
+        glReadPixels(0, y, frame_w, 1, GL_RGBA, GL_UNSIGNED_BYTE, row_pointers[y]);
     }
 
-    PngWriter::write_png_file("test.png", frame_w, frame_h, row_pointers);
+    PngWriter::write_png_file(file_name, frame_w, frame_h, row_pointers);
 
     return 0;
 }
