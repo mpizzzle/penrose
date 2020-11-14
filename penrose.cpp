@@ -10,15 +10,17 @@
 #include <glm/gtx/rotate_vector.hpp>
 
 #include <array>
+#include <iostream>
 #include <vector>
 #include <random>
 
 #include "shader.hpp"
+#include "png_writer.hpp"
 
-static const uint32_t window_w = 1920;
-static const uint32_t window_h = 1080;
-static const uint32_t depth = 7;       //recursion depth
-static const bool p2 = false;          //tiling type (p2, p3)
+static const uint32_t window_w = 1920 * 4;
+static const uint32_t window_h = 1080 * 4;
+static const uint32_t depth = 10;      //recursion depth
+        static const bool p2 = true;          //tiling type (p2, p3)
 static const float line_w = 2.0f;      //line width
 
 static const float phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
@@ -160,6 +162,7 @@ int main() {
     GLint paint = glGetUniformLocation(programID, "paint");
 
     while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0 && paint != -1) {
+        glViewport(-1.0 * (window_w / 2.5), -1.0 * (window_h / 2.5), window_w, window_h);
         glClearColor(colours.back().x, colours.back().y, colours.back().z, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -176,6 +179,24 @@ int main() {
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
+    //int width, height;
+
+    //glfwGetFramebufferSize(window, &width, &height);
+    //std::cout << "width: "<< width << " height: " << height << std::endl;
+    //GLsizei nrChannels = 4;
+    //GLsizei stride = nrChannels * width;
+    //stride += (stride % 4) ? (4 - stride % 4) : 0;
+    //GLsizei bufferSize = stride * height;
+    //std::vector<char> buffer(bufferSize);
+    //glPixelStorei(GL_PACK_ALIGNMENT, 4);
+    //glReadBuffer(GL_FRONT);
+    //glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buffer.data());
+
+    //stbi_flip_vertically_on_write(true);
+    //stbi_write_png(filepath, width, height, nrChannels, buffer.data(), stride);
+
+    //PngWriter::write_png_file("test.png", window_w, window_h, nullptr);
 
     return 0;
 }
