@@ -14,13 +14,15 @@
 #include <vector>
 #include <random>
 
+#include <png.h>
+
 #include "shader.hpp"
 #include "png_writer.hpp"
 
 static const uint32_t window_w = 1920 * 4;
 static const uint32_t window_h = 1080 * 4;
 static const uint32_t depth = 10;      //recursion depth
-        static const bool p2 = true;          //tiling type (p2, p3)
+static const bool p2 = false;          //tiling type (p2, p3)
 static const float line_w = 2.0f;      //line width
 
 static const float phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
@@ -180,23 +182,21 @@ int main() {
         glfwPollEvents();
     }
 
-    //int width, height;
 
-    //glfwGetFramebufferSize(window, &width, &height);
-    //std::cout << "width: "<< width << " height: " << height << std::endl;
-    //GLsizei nrChannels = 4;
-    //GLsizei stride = nrChannels * width;
-    //stride += (stride % 4) ? (4 - stride % 4) : 0;
-    //GLsizei bufferSize = stride * height;
-    //std::vector<char> buffer(bufferSize);
-    //glPixelStorei(GL_PACK_ALIGNMENT, 4);
-    //glReadBuffer(GL_FRONT);
-    //glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buffer.data());
+    glPixelStorei(GL_PACK_ALIGNMENT, 4);
+    glReadBuffer(GL_FRONT);
 
-    //stbi_flip_vertically_on_write(true);
-    //stbi_write_png(filepath, width, height, nrChannels, buffer.data(), stride);
+    int frame_w, frame_h;
+    glfwGetFramebufferSize(window, &frame_w, &frame_h);
 
-    //PngWriter::write_png_file("test.png", window_w, window_h, nullptr);
+    png_bytep* row_pointers = (png_bytep*) malloc(sizeof(unsigned char) * frame_h);
+
+    for (unsigned int yy = 0; yy < frame_h; ++yy) {
+        row_pointers[yy] = (png_byte*) malloc((4 * sizeof(png_byte)) * frame_w);
+        glReadPixels(0, yy, frame_w, 1, GL_RGBA, GL_UNSIGNED_BYTE, row_pointers[yy]);
+    }
+
+    PngWriter::write_png_file("test.png", frame_w, frame_h, row_pointers);
 
     return 0;
 }

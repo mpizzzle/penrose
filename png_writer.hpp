@@ -5,7 +5,9 @@
 
 #include <string>
 
+#include <png.h>
+
 class PngWriter {
 public:
-    static void write_png_file(std::string file_name, int width, int height, std::byte* row_pointers);
+    static void write_png_file(std::string file_name, int width, int height, png_bytep* row_pointers);
 };
