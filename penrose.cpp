@@ -189,9 +189,9 @@ int main() {
     int frame_w, frame_h;
     glfwGetFramebufferSize(window, &frame_w, &frame_h);
 
-    png_bytep* row_pointers = (png_bytep*) malloc(sizeof(unsigned char) * frame_h);
+    png_bytep* row_pointers = (png_bytep*) malloc(sizeof(png_bytep) * frame_h);
 
-    for (unsigned int yy = 0; yy < frame_h; ++yy) {
+    for (int yy = 0; yy < frame_h; ++yy) {
         row_pointers[yy] = (png_byte*) malloc((4 * sizeof(png_byte)) * frame_w);
         glReadPixels(0, yy, frame_w, 1, GL_RGBA, GL_UNSIGNED_BYTE, row_pointers[yy]);
     }
