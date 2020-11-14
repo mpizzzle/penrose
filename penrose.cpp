@@ -183,9 +183,6 @@ int main() {
         glfwPollEvents();
     }
 
-    glPixelStorei(GL_PACK_ALIGNMENT, 4);
-    glReadBuffer(GL_FRONT);
-
     int frame_w, frame_h;
     glfwGetFramebufferSize(window, &frame_w, &frame_h);
 
