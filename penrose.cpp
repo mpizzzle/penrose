@@ -19,8 +19,10 @@
 #include "shader.hpp"
 #include "png_writer.hpp"
 
-static const uint32_t window_w = 1920 * 4;
-static const uint32_t window_h = 1080 * 4;
+
+static const float scale = 4.0f;
+static const uint32_t window_w = 1920 * scale;
+static const uint32_t window_h = 1080 * scale;
 static const uint32_t depth = 10;      //recursion depth
 static const bool p2 = false;          //tiling type (p2, p3)
 static const float line_w = 2.0f;      //line width
@@ -103,7 +105,6 @@ int main() {
     }
 
     for (auto& p : points) {
-        p = glm::rotate(p, poly_angle);
         p.x = (p.x / window_w) * window_h;
     }
 
@@ -165,7 +166,7 @@ int main() {
     GLint paint = glGetUniformLocation(programID, "paint");
 
     while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0 && paint != -1) {
-        glViewport(-1.0 * (window_w / 2.5), -1.0 * (window_h / 2.5), window_w, window_h);
+        glViewport(-1.0 * (window_w / scale) * ((0.5 * scale) - 0.5), -1.0 * (window_h / scale) * ((0.5 * scale) - 0.5), window_w, window_h);
         glClearColor(colours.back().x, colours.back().y, colours.back().z, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
