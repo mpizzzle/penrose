@@ -14,8 +14,6 @@
 #include <string>
 #include <vector>
 
-#include <png.h>
-
 #include "shader.hpp"
 #include "png_writer.hpp"
 
