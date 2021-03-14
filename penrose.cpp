@@ -17,13 +17,12 @@
 #include "shader.hpp"
 #include "png_writer.hpp"
 
-
-static const float scale = 4.0f;
-static const uint32_t window_w = 1920 * scale;
+static const float scale = 8.0f;
+static const uint32_t window_w = 1080 * scale;
 static const uint32_t window_h = 1080 * scale;
-static const uint32_t depth = 10;      //recursion depth
-static const bool p2 = false;          //tiling type (p2, p3)
-static const float line_w = 2.0f;      //line width
+static const uint32_t depth = 7;          //recursion depth
+static const bool p2 = false;             //tiling type (p2, p3)
+static const float line_w = 1.0f * scale; //line width
 static const std::string file_name = "penrose.png";
 
 static const float phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
@@ -140,7 +139,7 @@ int main() {
 
     glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
-    uint32_t VAOs[5], VBO, EBOs[5];
+    uint32_t VAOs[5], VBO, EBOs[5], FBO, TCBO, RBO;
 
     glGenVertexArrays(5, VAOs);
     glGenBuffers(1, &VBO);
@@ -160,39 +159,48 @@ int main() {
         glEnableVertexAttribArray(0);
     }
 
+    glGenFramebuffers(1, &FBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+    glGenTextures(1, &TCBO);
+    glBindTexture(GL_TEXTURE_2D, TCBO);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_w, window_h, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, TCBO, 0);
+    glGenRenderbuffers(1, &RBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, RBO);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, window_w,  window_h);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        return -1;
+    }
+
     uint32_t programID = Shader::loadShaders("vertex.vert", "fragment.frag");
     GLint paint = glGetUniformLocation(programID, "paint");
 
-    while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0 && paint != -1) {
-        glViewport(-1.0 * (window_w / scale) * ((0.5 * scale) - 0.5), -1.0 * (window_h / scale) * ((0.5 * scale) - 0.5), window_w, window_h);
-        glClearColor(colours.back().x, colours.back().y, colours.back().z, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //glViewport(-1.0 * (window_w / scale) * ((0.5 * scale) - 0.5), -1.0 * (window_h / scale) * ((0.5 * scale) - 0.5), window_w * scale, window_h * scale);
+    glClearColor(colours.back().x, colours.back().y, colours.back().z, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glUseProgram(programID);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glUseProgram(programID);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-        for (uint32_t i = 0; i < indices.size(); ++i) {
-            glPolygonMode(GL_FRONT_AND_BACK, i < indices.size() - 1 ? GL_FILL : GL_LINE);
-            glUniform3fv(paint, 1, &colours[i][0]);
-            glBindVertexArray(VAOs[i]);
-            glDrawElements(i < indices.size() - 1 ? GL_TRIANGLES : GL_LINES, indices[i].size(), GL_UNSIGNED_INT, 0);
-        }
-
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+    for (uint32_t i = 0; i < indices.size(); ++i) {
+        glPolygonMode(GL_FRONT_AND_BACK, i < indices.size() - 1 ? GL_FILL : GL_LINE);
+        glUniform3fv(paint, 1, &colours[i][0]);
+        glBindVertexArray(VAOs[i]);
+        glDrawElements(i < indices.size() - 1 ? GL_TRIANGLES : GL_LINES, indices[i].size(), GL_UNSIGNED_INT, 0);
     }
 
-    int frame_w, frame_h;
-    glfwGetFramebufferSize(window, &frame_w, &frame_h);
+    png_bytep* row_pointers = (png_bytep*) malloc(sizeof(png_bytep) * window_h);
 
-    png_bytep* row_pointers = (png_bytep*) malloc(sizeof(png_bytep) * frame_h);
-
-    for (int y = 0; y < frame_h; ++y) {
-        row_pointers[y] = (png_byte*) malloc((4 * sizeof(png_byte)) * frame_w);
-        glReadPixels(0, y, frame_w, 1, GL_RGBA, GL_UNSIGNED_BYTE, row_pointers[y]);
+    for (uint32_t y = 0; y < window_h; ++y) {
+        row_pointers[y] = (png_byte*) malloc((4 * sizeof(png_byte)) * window_w);
+        glReadPixels(0, y, window_w, 1, GL_RGBA, GL_UNSIGNED_BYTE, row_pointers[y]);
     }
 
-    PngWriter::write_png_file(file_name, frame_w, frame_h, row_pointers);
+    PngWriter::write_png_file(file_name, window_w, window_h, row_pointers);
 
     return 0;
 }
