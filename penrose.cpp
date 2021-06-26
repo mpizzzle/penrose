@@ -17,15 +17,16 @@
 #include "shader.hpp"
 #include "png_writer.hpp"
 
-static const float scale = 8.0f;
+static const float zoom = 2.0f;
+static const float scale = 4.0f;
 static const uint32_t window_w = 1080 * scale;
 static const uint32_t window_h = 1080 * scale;
-static const uint32_t depth = 7;          //recursion depth
+static const uint32_t depth = 8;          //recursion depth
 static const bool p2 = false;             //tiling type (p2, p3)
-static const float line_w = 1.0f * scale; //line width
+static const float line_w = 2.0f * scale; //line width
 static const std::string file_name = "penrose.png";
 
-static const float phi = 1.0 / ((1.0 + sqrt(5.0)) / 2);
+static const float phi = 1.0f / ((1.0f + sqrt(5.0f)) / 2);
 
 class triangle {
 public:
@@ -93,7 +94,7 @@ int main() {
     uint32_t poly = 10;
     float poly_angle = glm::radians(360.0f / poly);
 
-    std::vector<glm::vec2> points = { glm::vec2(0.0f, 0.0f), glm::vec2(0.0f, 1.0f) };
+    std::vector<glm::vec2> points = { glm::vec2(0.0f, 0.0f), glm::vec2(0.0f, zoom) };
     std::array<std::vector<uint32_t>, 5> indices;
 
     for (uint32_t i = 1; i < poly; ++i) {
@@ -102,6 +103,7 @@ int main() {
     }
 
     for (auto& p : points) {
+        //p = glm::rotate(p, poly_angle / 2.0f);
         p.x = (p.x / window_w) * window_h;
     }
 
@@ -124,6 +126,7 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     GLFWwindow* window = glfwCreateWindow(window_w, window_h, "penrose", NULL, NULL);
+    glfwHideWindow(window);
 
     if(window == NULL) {
         glfwTerminate();
@@ -137,7 +140,7 @@ int main() {
         return -1;
     }
 
-    glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
+    //glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
     uint32_t VAOs[5], VBO, EBOs[5], FBO, TCBO, RBO;
 
@@ -161,15 +164,30 @@ int main() {
 
     glGenFramebuffers(1, &FBO);
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+
+    //glBindFramebuffer(GL_READ_FRAMEBUFFER, FBO);
+    //glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    //glBlitFramebuffer(0, 0, window_w, window_h, 0, 0, window_w, window_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
     glGenTextures(1, &TCBO);
+
     glBindTexture(GL_TEXTURE_2D, TCBO);
+    //glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, TCBO);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_w, window_h, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, window_w, window_h, GL_TRUE);
+
+    //glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, TCBO, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, TCBO, 0);
+
     glGenRenderbuffers(1, &RBO);
     glBindRenderbuffer(GL_RENDERBUFFER, RBO);
+
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, window_w,  window_h);
+    //glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, window_w,  window_h);
+
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -178,8 +196,6 @@ int main() {
 
     uint32_t programID = Shader::loadShaders("vertex.vert", "fragment.frag");
     GLint paint = glGetUniformLocation(programID, "paint");
-
-    //glViewport(-1.0 * (window_w / scale) * ((0.5 * scale) - 0.5), -1.0 * (window_h / scale) * ((0.5 * scale) - 0.5), window_w * scale, window_h * scale);
     glClearColor(colours.back().x, colours.back().y, colours.back().z, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
