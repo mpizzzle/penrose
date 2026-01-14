@@ -11,7 +11,7 @@ program for generating penrose tilings.
 work in progress.
 
 ## how does it work?
-* https://tartarus.org/~simon/20110412-penrose/penrose.xhtml
+* https://web.archive.org/web/20250717025618/https://tartarus.org/~simon/20110412-penrose/penrose.xhtml
 
 ## dependencies:
 * [glfw](https://www.glfw.org/)
